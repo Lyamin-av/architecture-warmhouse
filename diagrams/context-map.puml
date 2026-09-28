@@ -17,45 +17,47 @@ skinparam package {
 '   стрелка идёт от downstream (D) к upstream (U): D зависит от U
 '   [ACL] — anti-corruption layer
 
-package "Управление отоплением [supporting]" as SD_HEAT #FBEFE6 {
-  rectangle "Настройка\nтемпературного режима" as HEAT
-}
-package "Управление освещением [supporting]" as SD_LIGHT #FBEFE6 {
-  rectangle "Управление\nосвещением" as LIGHT
-}
-package "Управление воротами [supporting]" as SD_GATE #FBEFE6 {
-  rectangle "Управление\nворотами" as GATE
-}
-package "Управление видеонаблюдением [supporting]" as SD_VIDEO #FBEFE6 {
-  rectangle "Просмотр камер" as CAM_VIEW
-  rectangle "Передача видеопотока\nна анализ" as CAM_STREAM
-  rectangle "Управление камерами" as CAM_CTRL
-}
-package "Охрана [supporting]" as SD_SEC #FBEFE6 {
-  rectangle "Управление охраной" as SEC
-  rectangle "Видеоаналитика\n[generic]" as VA
-}
-package "Управление телематикой [supporting]" as SD_TEL #FBEFE6 {
-  rectangle "Управление приборами\n(хозяин прибора)" as DEV
-  rectangle "Сбор данных\nс приборов" as COLLECT
-  rectangle "Просмотр телеметрии" as TVIEW
-}
-package "Интеграция приборов [core]" as SD_INT #E6EEFB {
-  rectangle "Адаптеры протоколов\n[ACL]" as ADAPT
-  rectangle "Каталог типов\nприборов" as CATALOG
-}
-package "Автоматизация [core]" as SD_AUTO #E6EEFB {
-  rectangle "Конструктор сценариев" as SCEN
-}
-package "Конструктор дома [supporting]" as SD_HOUSE #FBEFE6 {
-  rectangle "Зонирование и расстановка\nприборов (хозяин дома,\nзон, периметра)" as HOUSE
-}
-package "Пользователи [generic]" as SD_USERS #EEEEEE {
-  rectangle "Регистрация\nпользователей" as REG
-  rectangle "Настройка\nролевой модели" as ROLES
-}
-package "Аутентификация [generic]" as SD_AUTH #EEEEEE {
-  rectangle "Режимы\nаутентификации" as AUTH
+package "Домен: Умный дом" as DOMAIN #FFFFFF {
+  package "Поддомен: Управление отоплением [supporting]" as SD_HEAT #FBEFE6 {
+    rectangle "Настройка\nтемпературного режима" as HEAT
+  }
+  package "Поддомен: Управление освещением [supporting]" as SD_LIGHT #FBEFE6 {
+    rectangle "Управление\nосвещением" as LIGHT
+  }
+  package "Поддомен: Управление воротами [supporting]" as SD_GATE #FBEFE6 {
+    rectangle "Управление\nворотами" as GATE
+  }
+  package "Поддомен: Управление видеонаблюдением [supporting]" as SD_VIDEO #FBEFE6 {
+    rectangle "Просмотр камер" as CAM_VIEW
+    rectangle "Передача видеопотока\nна анализ" as CAM_STREAM
+    rectangle "Управление камерами" as CAM_CTRL
+  }
+  package "Поддомен: Охрана [supporting]" as SD_SEC #FBEFE6 {
+    rectangle "Управление охраной" as SEC
+    rectangle "Видеоаналитика\n[generic]" as VA
+  }
+  package "Поддомен: Управление телематикой [supporting]" as SD_TEL #FBEFE6 {
+    rectangle "Управление приборами\n(хозяин прибора)" as DEV
+    rectangle "Сбор данных\nс приборов" as COLLECT
+    rectangle "Просмотр телеметрии" as TVIEW
+  }
+  package "Поддомен: Интеграция приборов [core]" as SD_INT #E6EEFB {
+    rectangle "Адаптеры протоколов\n[ACL]" as ADAPT
+    rectangle "Каталог типов\nприборов" as CATALOG
+  }
+  package "Поддомен: Автоматизация [core]" as SD_AUTO #E6EEFB {
+    rectangle "Конструктор сценариев" as SCEN
+  }
+  package "Поддомен: Конструктор дома [supporting]" as SD_HOUSE #FBEFE6 {
+    rectangle "Зонирование и расстановка\nприборов (хозяин дома,\nзон, периметра)" as HOUSE
+  }
+  package "Поддомен: Пользователи [generic]" as SD_USERS #EEEEEE {
+    rectangle "Регистрация\nпользователей" as REG
+    rectangle "Настройка\nролевой модели" as ROLES
+  }
+  package "Поддомен: Аутентификация [generic]" as SD_AUTH #EEEEEE {
+    rectangle "Режимы\nаутентификации" as AUTH
+  }
 }
 
 rectangle "Приборы партнёров\n(внешние)" as EXT_DEV #F5F5F5
@@ -95,5 +97,18 @@ HOUSE "D" --> "U" DEV : новые / удалённые приборы
 HEAT "D" --> "U" HOUSE : зона
 SEC "D" --> "U" HOUSE : дом, зоны, периметр
 ROLES "D" --> "U" HOUSE : дом, зоны
+
+legend right
+  |= Обозначение |= Смысл |
+  | Внешняя рамка «Домен» | домен |
+  | Рамка «Поддомен: …» | поддомен; цвет = тип |
+  |<#E6EEFB>| core |
+  |<#FBEFE6>| supporting |
+  |<#EEEEEE>| generic |
+  | Белый блок внутри поддомена | ограниченный контекст |
+  | Серый блок вне домена | внешняя система |
+  | Стрелка D → U | downstream зависит от upstream |
+  | [ACL] | anti-corruption layer |
+endlegend
 
 @enduml
