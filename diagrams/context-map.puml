@@ -1,0 +1,99 @@
+@startuml context-map
+title Карта контекстов (Context Map) — Умный дом
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontSize 12
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+skinparam package {
+  BorderColor #888888
+  FontStyle bold
+}
+
+' Условные обозначения:
+'   стрелка идёт от downstream (D) к upstream (U): D зависит от U
+'   [ACL] — anti-corruption layer
+
+package "Управление отоплением [supporting]" as SD_HEAT #FBEFE6 {
+  rectangle "Настройка\nтемпературного режима" as HEAT
+}
+package "Управление освещением [supporting]" as SD_LIGHT #FBEFE6 {
+  rectangle "Управление\nосвещением" as LIGHT
+}
+package "Управление воротами [supporting]" as SD_GATE #FBEFE6 {
+  rectangle "Управление\nворотами" as GATE
+}
+package "Управление видеонаблюдением [supporting]" as SD_VIDEO #FBEFE6 {
+  rectangle "Просмотр камер" as CAM_VIEW
+  rectangle "Передача видеопотока\nна анализ" as CAM_STREAM
+  rectangle "Управление камерами" as CAM_CTRL
+}
+package "Охрана [supporting]" as SD_SEC #FBEFE6 {
+  rectangle "Управление охраной" as SEC
+  rectangle "Видеоаналитика\n[generic]" as VA
+}
+package "Управление телематикой [supporting]" as SD_TEL #FBEFE6 {
+  rectangle "Управление приборами\n(хозяин прибора)" as DEV
+  rectangle "Сбор данных\nс приборов" as COLLECT
+  rectangle "Просмотр телеметрии" as TVIEW
+}
+package "Интеграция приборов [core]" as SD_INT #E6EEFB {
+  rectangle "Адаптеры протоколов\n[ACL]" as ADAPT
+  rectangle "Каталог типов\nприборов" as CATALOG
+}
+package "Автоматизация [core]" as SD_AUTO #E6EEFB {
+  rectangle "Конструктор сценариев" as SCEN
+}
+package "Конструктор дома [supporting]" as SD_HOUSE #FBEFE6 {
+  rectangle "Зонирование и расстановка\nприборов (хозяин дома,\nзон, периметра)" as HOUSE
+}
+package "Пользователи [generic]" as SD_USERS #EEEEEE {
+  rectangle "Регистрация\nпользователей" as REG
+  rectangle "Настройка\nролевой модели" as ROLES
+}
+package "Аутентификация [generic]" as SD_AUTH #EEEEEE {
+  rectangle "Режимы\nаутентификации" as AUTH
+}
+
+rectangle "Приборы партнёров\n(внешние)" as EXT_DEV #F5F5F5
+rectangle "Камеры\n(внешние)" as EXT_CAM #F5F5F5
+
+' --- команды к приборам ---
+HEAT "D" --> "U" DEV : команды
+LIGHT "D" --> "U" DEV : команды
+GATE "D" --> "U" DEV : команды
+CAM_CTRL "D" --> "U" DEV : команды
+DEV "D" --> "U" ADAPT : команды
+DEV "D" --> "U" CATALOG : описание типа
+ADAPT --> EXT_DEV : протоколы партнёров
+
+' --- данные с приборов ---
+COLLECT "D" --> "U" ADAPT : показания
+COLLECT "D" --> "U" DEV : прибор, частота опроса
+TVIEW "D" --> "U" COLLECT : текущие / история
+HEAT "D" --> "U" COLLECT : текущая температура
+
+' --- сценарии и охрана ---
+SCEN "D" --> "U" HEAT : команды
+SCEN "D" --> "U" LIGHT : команды
+SCEN "D" --> "U" GATE : команды
+SCEN "D" --> "U" SEC : постановка на охрану
+SEC "D" --> "U" GATE : открыть ворота
+SEC "D" --> "U" VA : распознанный номер
+VA "D" --> "U" CAM_STREAM : видеопоток
+VA "D" --> "U" CAM_CTRL : команда слежения
+
+' --- видео (исключение: напрямую с камер) ---
+CAM_STREAM --> EXT_CAM : видеопоток
+CAM_VIEW --> EXT_CAM : видеопоток
+
+' --- дом и приборы ---
+HOUSE "D" --> "U" DEV : новые / удалённые приборы
+HEAT "D" --> "U" HOUSE : зона
+SEC "D" --> "U" HOUSE : дом, зоны, периметр
+ROLES "D" --> "U" HOUSE : дом, зоны
+
+@enduml
