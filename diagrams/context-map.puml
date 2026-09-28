@@ -47,6 +47,7 @@ package "Домен: Умный дом" as DOMAIN #FFFFFF {
   }
   package "Поддомен: Автоматизация [core]" as SD_AUTO #E6EEFB {
     rectangle "Конструктор сценариев" as SCEN
+    rectangle "Выполнение сценариев" as RUN
   }
   package "Поддомен: Конструктор дома [supporting]" as SD_HOUSE #FBEFE6 {
     rectangle "Зонирование и расстановка\nприборов (хозяин дома,\nзон, периметра)" as HOUSE
@@ -79,10 +80,16 @@ TVIEW "D" --> "U" COLLECT : текущие / история
 HEAT "D" --> "U" COLLECT : текущая температура
 
 ' --- сценарии и охрана ---
-SCEN "D" --> "U" HEAT : команды
-SCEN "D" --> "U" LIGHT : команды
-SCEN "D" --> "U" GATE : команды
-SCEN "D" --> "U" SEC : постановка на охрану
+RUN "D" --> "U" SCEN : активные сценарии
+RUN "D" --> "U" HEAT : команды
+RUN "D" --> "U" LIGHT : команды
+RUN "D" --> "U" GATE : команды
+RUN "D" --> "U" SEC : постановка на охрану
+RUN "D" --> "U" SEC : события охраны\n[OHS/PL]
+RUN "D" --> "U" COLLECT : показания\n[OHS/PL]
+RUN "D" --> "U" DEV : состояние приборов\n[OHS/PL]
+SCEN "D" --> "U" HOUSE : приборы и зоны
+SCEN "D" --> "U" CATALOG : возможности приборов
 SEC "D" --> "U" GATE : открыть ворота
 SEC "D" --> "U" VA : распознанный номер
 VA "D" --> "U" CAM_STREAM : видеопоток
@@ -124,6 +131,7 @@ legend right
   | Серый блок вне домена | внешняя система |
   | Стрелка D → U | downstream зависит от upstream |
   | [ACL] | anti-corruption layer |
+  | [OHS/PL] | open host service / published language: события в едином формате |
 endlegend
 
 @enduml
