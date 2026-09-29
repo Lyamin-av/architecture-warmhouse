@@ -1,0 +1,58 @@
+@startuml 06-automation
+!include <C4/C4_Container>
+
+title Сценарий 6 из 7. Сценарии автоматизации
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Automation, "Модуль автоматизации", ".NET", "Микросервис: конструктор и выполнение сценариев")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    Container(DeviceIntegration, "Модуль интеграции приборов", ".NET", "Микросервис: адаптеры протоколов и каталог типов приборов")
+    Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
+    Container(Lighting, "Управление освещением", ".NET", "Микросервис")
+    Container(GateControl, "Управление воротами", ".NET", "Микросервис")
+    Container(VideoControl, "Управление видеонаблюдением", ".NET", "Микросервис: права на просмотр камер, управление трансляциями, команды камерам")
+    Container(Security, "Модуль охраны", ".NET", "Микросервис: управление охраной и видеоаналитика")
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
+    ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний")
+    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, типы приборов")
+    ContainerDb(dbAuto, "БД модуля автоматизации", "PostgreSQL", "Сценарии, конфигурации сценариев")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
+}
+
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Automation, "Конструктор сценариев", "HTTPS")
+Rel(Automation, HouseConfigurator, "Приборы и зоны для сценариев", "HTTPS")
+Rel(Automation, DeviceIntegration, "Возможности приборов из каталога", "HTTPS")
+Rel(Automation, Heating, "Команды по сценарию", "HTTPS")
+Rel(Automation, Lighting, "Команды по сценарию", "HTTPS")
+Rel(Automation, GateControl, "Команды по сценарию", "HTTPS")
+Rel(Automation, VideoControl, "Команды по сценарию", "HTTPS")
+Rel(Automation, Security, "Постановка на охрану по сценарию", "HTTPS")
+Rel(Telematics, Broker, "Публикует: показания, состояние приборов", "AMQP")
+Rel(Security, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
+Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны", "AMQP")
+Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
+
+note right of Broker
+  Подписчик на «сценарий сработал»:
+  модуль уведомлений (диаграмма 7).
+end note
+
+Rel(Heating, dbHeating, "Читает и пишет", "SQL")
+Rel(Security, dbSecurity, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
+Rel(Automation, dbAuto, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml
