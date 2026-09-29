@@ -1,0 +1,51 @@
+@startuml 05-security
+!include <C4/C4_Container>
+
+title Сценарий 5 из 7. Охрана
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Security, "Модуль охраны", ".NET", "Микросервис: управление охраной и видеоаналитика")
+    Container(VideoControl, "Управление видеонаблюдением", ".NET", "Микросервис: права на просмотр камер, управление трансляциями, команды камерам")
+    Container(MediaServer, "Медиасервер", "HLS / WebRTC", "Забирает видеопоток с камер, отдаёт его пользователям (через Gateway) и в модуль охраны на анализ")
+    Container(GateControl, "Управление воротами", ".NET", "Микросервис")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+    ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
+}
+
+System_Ext(cameras, "Камеры", "Камеры видеонаблюдения партнёров")
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Security, "Управление охраной", "HTTPS")
+Rel(Security, HouseConfigurator, "Дом, зоны, периметр", "HTTPS")
+Rel(MediaServer, cameras, "Забирает видеопоток", "Протоколы партнёров")
+Rel(MediaServer, Security, "Видеопоток на анализ", "Поток")
+Rel(Security, VideoControl, "Команды камерам (слежение)", "HTTPS")
+Rel(VideoControl, Telematics, "Команды камерам", "HTTPS")
+Rel(Security, GateControl, "Открытие ворот для разрешённого номера", "HTTPS")
+Rel(GateControl, Telematics, "Команды", "HTTPS")
+Rel(Security, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
+
+note right of Broker
+  Подписчики на события охраны:
+  см. диаграммы 6 (автоматизация)
+  и 7 (уведомления).
+  Дальше команды приборам идут
+  через модуль интеграции приборов
+  (диаграмма 3).
+end note
+
+Rel(Security, dbSecurity, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml

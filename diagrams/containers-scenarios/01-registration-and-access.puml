@@ -1,0 +1,28 @@
+@startuml 01-registration-and-access
+!include <C4/C4_Container>
+
+title Сценарий 1 из 7. Регистрация, вход и права доступа
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
+    Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
+    ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
+    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логирование")
+}
+
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Authentication, "Вход", "HTTPS")
+Rel(Gateway, Users, "Регистрация, роли", "HTTPS")
+Rel(Users, Authentication, "Создаёт учётные данные при регистрации", "HTTPS")
+
+Rel(Users, dbUsers, "Читает и пишет", "SQL")
+Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml

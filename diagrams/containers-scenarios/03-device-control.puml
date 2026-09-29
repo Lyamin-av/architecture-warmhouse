@@ -1,0 +1,43 @@
+@startuml 03-device-control
+!include <C4/C4_Container>
+
+title Сценарий 3 из 7. Управление отоплением, светом и воротами
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
+    Container(Lighting, "Управление освещением", ".NET", "Микросервис")
+    Container(GateControl, "Управление воротами", ".NET", "Микросервис")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    Container(DeviceIntegration, "Модуль интеграции приборов", ".NET", "Микросервис: адаптеры протоколов и каталог типов приборов")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний")
+    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, типы приборов")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
+}
+
+System_Ext(devices, "Приборы партнёров", "Датчики и исполнительные устройства: отопление, свет, ворота и др.")
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Heating, "Температурные режимы", "HTTPS")
+Rel(Gateway, Lighting, "Управление светом", "HTTPS")
+Rel(Gateway, GateControl, "Управление воротами", "HTTPS")
+Rel(Heating, HouseConfigurator, "Зоны плана", "HTTPS")
+Rel(Heating, Telematics, "Команды, запрос показаний", "HTTPS")
+Rel(Lighting, Telematics, "Команды", "HTTPS")
+Rel(GateControl, Telematics, "Команды", "HTTPS")
+Rel(Telematics, DeviceIntegration, "Команды и опрос через адаптеры", "HTTPS")
+Rel(DeviceIntegration, devices, "Команды, показания", "Протоколы партнёров")
+
+Rel(Heating, dbHeating, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml

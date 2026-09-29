@@ -240,7 +240,55 @@
 
 **Диаграмма контейнеров (Containers)**
 
-Добавьте диаграмму.
+Полная диаграмма:
+
+![Диаграмма контейнеров](diagrams/c4-containers.png)
+
+Исходник: [diagrams/c4-containers.puml](diagrams/c4-containers.puml)
+
+Полная диаграмма плотная, поэтому дополнительно система показана по сценариям использования. На каждой диаграмме сценария те же контейнеры и связи, что и на полной, только те, что участвуют в сценарии.
+
+1. Регистрация, вход и права доступа
+
+    ![Сценарий 1](diagrams/containers-scenarios/01-registration-and-access.png)
+
+    Исходник: [01-registration-and-access.puml](diagrams/containers-scenarios/01-registration-and-access.puml)
+
+2. Подключение приборов и настройка дома
+
+    ![Сценарий 2](diagrams/containers-scenarios/02-pairing-and-house-setup.png)
+
+    Исходник: [02-pairing-and-house-setup.puml](diagrams/containers-scenarios/02-pairing-and-house-setup.puml)
+
+3. Управление отоплением, светом и воротами
+
+    ![Сценарий 3](diagrams/containers-scenarios/03-device-control.png)
+
+    Исходник: [03-device-control.puml](diagrams/containers-scenarios/03-device-control.puml)
+
+4. Видеонаблюдение: просмотр камер
+
+    ![Сценарий 4](diagrams/containers-scenarios/04-video-viewing.png)
+
+    Исходник: [04-video-viewing.puml](diagrams/containers-scenarios/04-video-viewing.puml)
+
+5. Охрана
+
+    ![Сценарий 5](diagrams/containers-scenarios/05-security.png)
+
+    Исходник: [05-security.puml](diagrams/containers-scenarios/05-security.puml)
+
+6. Сценарии автоматизации
+
+    ![Сценарий 6](diagrams/containers-scenarios/06-automation.png)
+
+    Исходник: [06-automation.puml](diagrams/containers-scenarios/06-automation.puml)
+
+7. Уведомления
+
+    ![Сценарий 7](diagrams/containers-scenarios/07-notifications.png)
+
+    Исходник: [07-notifications.puml](diagrams/containers-scenarios/07-notifications.puml)
 
 **Диаграмма компонентов (Components)**
 

@@ -1,0 +1,35 @@
+@startuml 04-video-viewing
+!include <C4/C4_Container>
+
+title Сценарий 4 из 7. Видеонаблюдение: просмотр камер
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(VideoControl, "Управление видеонаблюдением", ".NET", "Микросервис: права на просмотр камер, управление трансляциями, команды камерам")
+    Container(MediaServer, "Медиасервер", "HLS / WebRTC", "Забирает видеопоток с камер, отдаёт его пользователям (через Gateway) и в модуль охраны на анализ")
+    Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
+    ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
+}
+
+System_Ext(cameras, "Камеры", "Камеры видеонаблюдения партнёров")
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, VideoControl, "Список камер, права на просмотр", "HTTPS")
+Rel(Gateway, MediaServer, "Просмотр видеопотока", "Поток")
+Rel(MediaServer, VideoControl, "Проверка прав на просмотр камеры", "HTTPS")
+Rel(VideoControl, MediaServer, "Управление трансляциями камер", "HTTPS")
+Rel(VideoControl, HouseConfigurator, "Зона камеры", "HTTPS")
+Rel(VideoControl, Users, "Зоны, видимые пользователю", "HTTPS")
+Rel(MediaServer, cameras, "Забирает видеопоток", "Протоколы партнёров")
+
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+Rel(Users, dbUsers, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml
