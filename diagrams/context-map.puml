@@ -55,6 +55,9 @@ package "Домен: Умный дом" as DOMAIN #FFFFFF {
     rectangle "Регистрация\nпользователей" as REG
     rectangle "Настройка\nролевой модели" as ROLES
   }
+  package "Поддомен: Уведомления [generic]" as SD_NOTIFY #EEEEEE {
+    rectangle "Рассылка уведомлений" as NOTIFY
+  }
   package "Поддомен: Аутентификация [generic]" as SD_AUTH #EEEEEE {
     rectangle "Режимы\nаутентификации" as AUTH
   }
@@ -62,6 +65,7 @@ package "Домен: Умный дом" as DOMAIN #FFFFFF {
 
 rectangle "Приборы партнёров\n(внешние)" as EXT_DEV #F5F5F5
 rectangle "Камеры\n(внешние)" as EXT_CAM #F5F5F5
+rectangle "Сервис уведомлений\n(внешний: push, SMS, email)" as EXT_NOTIFY #F5F5F5
 
 ' --- команды к приборам ---
 HEAT "D" --> "U" DEV : команды
@@ -108,6 +112,13 @@ REG "D" --> "U" AUTH : создание учётных данных\n[Conformist
 ROLES "D" --> "U" REG : пользователь
 CAM_VIEW "D" --> "U" HOUSE : зона камеры
 CAM_VIEW "D" --> "U" ROLES : видимые зоны
+
+' --- уведомления ---
+NOTIFY "D" --> "U" SEC : тревоги\n[OHS/PL]
+NOTIFY "D" --> "U" DEV : прибор не отвечает\n[OHS/PL]
+NOTIFY "D" --> "U" RUN : действие «уведомить»
+NOTIFY "D" --> "U" ROLES : получатели
+NOTIFY --> EXT_NOTIFY : доставка
 
 note bottom of AUTH
   Аутентификация — сквозная:
