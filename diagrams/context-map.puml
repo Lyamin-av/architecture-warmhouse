@@ -38,8 +38,7 @@ package "Домен: Умный дом" as DOMAIN #FFFFFF {
   }
   package "Поддомен: Управление телематикой [supporting]" as SD_TEL #FBEFE6 {
     rectangle "Управление приборами\n(хозяин прибора)" as DEV
-    rectangle "Сбор данных\nс приборов" as COLLECT
-    rectangle "Просмотр телеметрии" as TVIEW
+    rectangle "Телеметрия\n(сбор, архив, выдача\nпоказаний)" as COLLECT
   }
   package "Поддомен: Интеграция приборов [core]" as SD_INT #E6EEFB {
     rectangle "Адаптеры протоколов\n[ACL]" as ADAPT
@@ -76,7 +75,6 @@ ADAPT --> EXT_DEV : протоколы партнёров
 ' --- данные с приборов ---
 COLLECT "D" --> "U" ADAPT : показания
 COLLECT "D" --> "U" DEV : прибор, частота опроса
-TVIEW "D" --> "U" COLLECT : текущие / история
 HEAT "D" --> "U" COLLECT : текущая температура
 
 ' --- сценарии и охрана ---
