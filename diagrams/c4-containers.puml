@@ -92,7 +92,7 @@ Rel(MediaServer, cameras, "Забирает видеопоток", "Проток
 ' --- Охрана и видео ---
 Rel(MediaServer, Security, "Видеопоток на анализ", "Поток")
 Rel(VideoControl, MediaServer, "Управление трансляциями камер", "HTTPS")
-Rel(Security, VideoControl, "Команды камерам (слежение)", "HTTPS")
+Rel(Security, VideoControl, "Команды камерам (слежение), запуск и остановка потока на анализ", "HTTPS")
 Rel(Security, GateControl, "Открытие ворот для разрешённого номера", "HTTPS")
 
 ' --- Данные о доме и правах ---
