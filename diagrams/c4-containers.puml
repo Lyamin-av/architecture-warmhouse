@@ -43,7 +43,7 @@ System_Boundary(Warmhouse, "Умный дом") {
     ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
 
     Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
-    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логирование")
+    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логины и почты (копия из профиля), токены обновления и сброса пароля, логирование")
 }
 
 System_Ext(devices, "Приборы партнёров", "Датчики и исполнительные устройства: отопление, свет, ворота и др.")
@@ -61,7 +61,8 @@ Rel(partner, webapp, "Описывает типы приборов")
 Rel(webapp, Gateway, "Все запросы", "HTTPS")
 Rel(mobile, Gateway, "Все запросы", "HTTPS")
 
-Rel(Gateway, Authentication, "Вход", "HTTPS")
+Rel(Gateway, Authentication, "Вход, обновление токена, сброс пароля", "HTTPS")
+Rel(Gateway, Authentication, "Публичный ключ для проверки токена", "HTTPS")
 Rel(Gateway, Users, "Регистрация, роли", "HTTPS")
 Rel(Gateway, HouseConfigurator, "План дома, расстановка приборов", "HTTPS")
 Rel(Gateway, Heating, "Температурные режимы", "HTTPS")
@@ -77,6 +78,7 @@ Rel(Gateway, Notification, "Настройки уведомлений", "HTTPS")
 
 ' --- Пользователи и аутентификация ---
 Rel(Users, Authentication, "Создаёт учётные данные при регистрации", "HTTPS")
+Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
 
 ' --- Команды к приборам (только через контексты своего типа и телематику) ---
 Rel(Heating, Telematics, "Команды, запрос показаний", "HTTPS")
@@ -130,6 +132,7 @@ Rel(Automation, dbAuto, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
 Rel(Notification, dbNot, "Читает и пишет", "SQL")
 Rel(Users, dbUsers, "Читает и пишет", "SQL")
+Rel(Authentication, notify, "Письмо для сброса пароля", "HTTPS")
 Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
 
 ' Компромисс между вариантами A и C: медиасервер выделен в отдельный контейнер,
