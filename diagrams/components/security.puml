@@ -19,9 +19,6 @@ Container_Boundary(Security, "Модуль охраны") {
     Component(analytics, "Видеоаналитика", ".NET", "Анализирует видеопоток: распознаёт номера автомобилей, обнаруживает объекты на периметре, ведёт слежение за объектом")
     Component(publisher, "Публикатор событий", ".NET", "Публикует в брокер: тревога, постановка, снятие")
     Component(subscriber, "Подписчик на события", ".NET", "Принимает события: показания и состояние приборов, зона удалена, зона восстановлена")
-    Component(hcClient, "Клиент конфигурации дома", ".NET", "Запрашивает дом, зоны и периметр")
-    Component(vcClient, "Клиент видеонаблюдения", ".NET", "Команды камерам, запуск и остановка потока на анализ")
-    Component(gateClient, "Клиент управления воротами", ".NET", "Команда на открытие ворот")
     Component(repo, "Репозиторий", ".NET", "Читает и пишет состояние и режим охраны, журнал тревог, разрешённые номера")
 }
 
@@ -39,15 +36,12 @@ Rel(entry, guard, "Дом на охране?")
 Rel(analytics, guard, "Объект на периметре")
 Rel(guard, analytics, "Включить или выключить слежение")
 
-Rel(guard, hcClient, "Дом, зоны, периметр")
-Rel(guard, vcClient, "Запуск и остановка потока на анализ")
-Rel(analytics, vcClient, "Команды камере (слежение)")
-Rel(entry, gateClient, "Открыть ворота")
+Rel(guard, HouseConfigurator, "Дом, зоны, периметр", "HTTPS")
+Rel(guard, VideoControl, "Запуск и остановка потока на анализ", "HTTPS")
+Rel(analytics, VideoControl, "Команды камерам (слежение)", "HTTPS")
+Rel(entry, GateControl, "Открытие ворот для разрешённого номера", "HTTPS")
 Rel(guard, publisher, "Тревога, постановка, снятие")
 
-Rel(hcClient, HouseConfigurator, "Дом, зоны, периметр", "HTTPS")
-Rel(vcClient, VideoControl, "Команды камерам (слежение), запуск и остановка потока на анализ", "HTTPS")
-Rel(gateClient, GateControl, "Открытие ворот для разрешённого номера", "HTTPS")
 Rel(publisher, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
 
 Rel(guard, repo, "Читает и пишет состояние, режимы, журнал тревог")

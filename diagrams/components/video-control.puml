@@ -18,10 +18,6 @@ Container_Boundary(VideoControl, "Управление видеонаблюде�
     Component(streams, "Сервис трансляций", ".NET", "Запускает и останавливает трансляции камер на медиасервере: для просмотра пользователем и поток на анализ в модуль охраны по его запросу (камера у ворот — постоянно, камеры периметра — пока дом на охране)")
     Component(commands, "Сервис команд камерам", ".NET", "Команды камерам: поворот, приближение, слежение")
     Component(subscriber, "Подписчик на события зон", ".NET", "Принимает события: зона удалена, зона восстановлена")
-    Component(hcClient, "Клиент конфигурации дома", ".NET", "Запрашивает зону камеры")
-    Component(usersClient, "Клиент пользователей", ".NET", "Запрашивает зоны, видимые пользователю")
-    Component(mediaClient, "Клиент медиасервера", ".NET", "Управляет трансляциями на медиасервере")
-    Component(tmClient, "Клиент телематики", ".NET", "Отправляет команды камерам")
 }
 
 Rel(Gateway, api, "Список камер, права на просмотр", "HTTPS")
@@ -36,15 +32,11 @@ Rel(api, commands, "Команда камере")
 Rel(streams, access, "Есть ли право на просмотр")
 Rel(subscriber, streams, "Остановить трансляции камер удалённой зоны")
 
-Rel(access, hcClient, "Зона камеры")
-Rel(access, usersClient, "Видимые зоны пользователя")
-Rel(streams, mediaClient, "Запуск и остановка трансляции")
-Rel(commands, tmClient, "Команда камере")
+Rel(access, HouseConfigurator, "Зона камеры", "HTTPS")
+Rel(access, Users, "Зоны, видимые пользователю", "HTTPS")
+Rel(streams, MediaServer, "Управление трансляциями камер", "HTTPS")
+Rel(commands, Telematics, "Команды камерам", "HTTPS")
 
-Rel(hcClient, HouseConfigurator, "Зона камеры", "HTTPS")
-Rel(usersClient, Users, "Зоны, видимые пользователю", "HTTPS")
-Rel(mediaClient, MediaServer, "Управление трансляциями камер", "HTTPS")
-Rel(tmClient, Telematics, "Команды камерам", "HTTPS")
 
 SHOW_LEGEND()
 @enduml
