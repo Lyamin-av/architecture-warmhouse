@@ -14,7 +14,7 @@ System_Boundary(Warmhouse, "Умный дом") {
     ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
 
     Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
-    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы, последние показания зон")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
 
     Container(Lighting, "Управление освещением", ".NET", "Микросервис")
     Container(GateControl, "Управление воротами", ".NET", "Микросервис")
@@ -81,7 +81,7 @@ Rel(Users, Authentication, "Создаёт учётные данные при р
 Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
 
 ' --- Команды к приборам (только через контексты своего типа и телематику) ---
-Rel(Heating, Telematics, "Команды", "HTTPS")
+Rel(Heating, Telematics, "Команды, внеочередной опрос", "HTTPS")
 Rel(Lighting, Telematics, "Команды", "HTTPS")
 Rel(GateControl, Telematics, "Команды", "HTTPS")
 Rel(VideoControl, Telematics, "Команды камерам", "HTTPS")
