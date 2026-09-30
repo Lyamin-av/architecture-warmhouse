@@ -10,8 +10,10 @@ System_Boundary(Warmhouse, "Умный дом") {
     Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
     Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
     Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
     ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
     ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логины и почты (копия из профиля), токены обновления и сброса пароля, логирование")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
 }
 
 System_Ext(notify, "Сервис уведомлений", "Доставка push, SMS и email")
@@ -28,6 +30,8 @@ Rel(Users, Authentication, "Обновляет логин и почту при �
 Rel(Users, dbUsers, "Читает и пишет", "SQL")
 Rel(Authentication, notify, "Письмо для сброса пароля", "HTTPS")
 Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
+Rel(Users, HouseConfigurator, "Дом и зоны плана для ролей", "HTTPS")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
 
 SHOW_LEGEND()
 @enduml

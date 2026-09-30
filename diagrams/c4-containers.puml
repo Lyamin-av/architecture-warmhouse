@@ -100,6 +100,7 @@ Rel(Heating, HouseConfigurator, "Зоны плана", "HTTPS")
 Rel(Security, HouseConfigurator, "Дом, зоны, периметр", "HTTPS")
 Rel(VideoControl, HouseConfigurator, "Зона камеры", "HTTPS")
 Rel(VideoControl, Users, "Зоны, видимые пользователю", "HTTPS")
+Rel(Users, HouseConfigurator, "Дом и зоны плана для ролей", "HTTPS")
 Rel(MediaServer, VideoControl, "Проверка прав на просмотр камеры", "HTTPS")
 
 ' --- Автоматизация ---
