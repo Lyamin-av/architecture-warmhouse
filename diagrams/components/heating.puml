@@ -24,8 +24,7 @@ Rel(Automation, api, "Команды по сценарию, в т. ч. смен�
 Rel(Broker, subscriber, "Доставляет: показания приборов, зона удалена, зона восстановлена", "AMQP")
 
 Rel(api, regimes, "Режимы зон, команда по сценарию")
-Rel(subscriber, regimes, "Приостановить или возобновить режимы зоны")
-Rel(subscriber, regimes, "Новое показание прибора")
+Rel(subscriber, regimes, "Новое показание; приостановить или возобновить режимы зоны")
 Rel(regimes, hcClient, "Зона и приборы в зоне")
 Rel(regimes, tmClient, "Команды приборам, текущая температура")
 Rel(hcClient, HouseConfigurator, "Зоны плана", "HTTPS")
