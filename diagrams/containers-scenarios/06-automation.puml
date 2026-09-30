@@ -39,7 +39,7 @@ Rel(Automation, VideoControl, "Команды по сценарию", "HTTPS")
 Rel(Automation, Security, "Постановка на охрану по сценарию", "HTTPS")
 Rel(Telematics, Broker, "Публикует: показания, состояние приборов", "AMQP")
 Rel(Security, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
-Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны", "AMQP")
+Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны, удаление и восстановление зон", "AMQP")
 Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
 
 note right of Broker
@@ -53,6 +53,9 @@ Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
 Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
 Rel(Automation, dbAuto, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Heating, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Security, "Доставляет: зона удалена, зона восстановлена", "AMQP")
 
 SHOW_LEGEND()
 @enduml

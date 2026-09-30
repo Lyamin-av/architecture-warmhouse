@@ -116,9 +116,15 @@ Rel(Automation, Security, "Постановка на охрану по сцен�
 Rel(Telematics, Broker, "Публикует: показания, состояние приборов, новые и удалённые приборы", "AMQP")
 Rel(Security, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
 Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
-Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны", "AMQP")
+Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны, удаление и восстановление зон", "AMQP")
 Rel(Broker, HouseConfigurator, "Доставляет: новые и удалённые приборы", "AMQP")
 Rel(Broker, Notification, "Доставляет: события приборов, охраны и сценариев", "AMQP")
+
+Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Users, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Security, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Heating, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, VideoControl, "Доставляет: зона удалена, зона восстановлена", "AMQP")
 
 ' --- Уведомления ---
 Rel(Notification, Users, "Получатели по дому и ролям, контакты", "HTTPS")
