@@ -47,7 +47,8 @@ Rel(Security, dbSecurity, "Читает и пишет", "SQL")
 Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
-Rel(Broker, Security, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Security, "Доставляет: показания и состояние приборов, зона удалена, зона восстановлена", "AMQP")
+Rel(Telematics, Broker, "Публикует: показания, состояние приборов", "AMQP")
 
 SHOW_LEGEND()
 @enduml
