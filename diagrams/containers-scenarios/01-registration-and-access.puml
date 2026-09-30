@@ -11,6 +11,7 @@ System_Boundary(Warmhouse, "Умный дом") {
     Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
     Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
     Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
     ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
     ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логины и почты (копия из профиля), токены обновления и сброса пароля, логирование")
     ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
@@ -32,6 +33,8 @@ Rel(Authentication, notify, "Письмо для сброса пароля", "HT
 Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
 Rel(Users, HouseConfigurator, "Дом и зоны плана для ролей", "HTTPS")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Users, "Доставляет: зона удалена, зона восстановлена", "AMQP")
 
 SHOW_LEGEND()
 @enduml
