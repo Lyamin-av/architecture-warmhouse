@@ -10,28 +10,24 @@ Container(Telematics, "Модуль телематики", ".NET", "Микрос
 
 Container_Boundary(Lighting, "Управление освещением") {
     Component(lApi, "API-контроллер", ".NET", "Принимает запросы на управление светом")
-    Component(lService, "Сервис управления освещением", ".NET", "Формирует команды для осветительных приборов")
-    Component(lClient, "Клиент телематики", ".NET", "Отправляет команды в «Модуль телематики»")
+    Component(lService, "Сервис управления освещением", ".NET", "Формирует команды для осветительных приборов и передаёт их в «Модуль телематики»")
 }
 
 Container_Boundary(GateControl, "Управление воротами") {
     Component(gApi, "API-контроллер", ".NET", "Принимает запросы на управление воротами")
-    Component(gService, "Сервис управления воротами", ".NET", "Формирует команды для приводов ворот (открыть, закрыть)")
-    Component(gClient, "Клиент телематики", ".NET", "Отправляет команды в «Модуль телематики»")
+    Component(gService, "Сервис управления воротами", ".NET", "Формирует команды для приводов ворот (открыть, закрыть) и передаёт их в «Модуль телематики»")
 }
 
 Rel(Gateway, lApi, "Управление светом", "HTTPS")
 Rel(Automation, lApi, "Команды по сценарию", "HTTPS")
 Rel(lApi, lService, "Команда управления светом")
-Rel(lService, lClient, "Команда прибору")
-Rel(lClient, Telematics, "Команды", "HTTPS")
+Rel(lService, Telematics, "Команды", "HTTPS")
 
 Rel(Gateway, gApi, "Управление воротами", "HTTPS")
 Rel(Automation, gApi, "Команды по сценарию", "HTTPS")
 Rel(Security, gApi, "Открытие ворот для разрешённого номера", "HTTPS")
 Rel(gApi, gService, "Команда управления воротами")
-Rel(gService, gClient, "Команда прибору")
-Rel(gClient, Telematics, "Команды", "HTTPS")
+Rel(gService, Telematics, "Команды", "HTTPS")
 
 SHOW_LEGEND()
 @enduml
