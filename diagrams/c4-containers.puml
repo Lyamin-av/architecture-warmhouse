@@ -118,7 +118,7 @@ Rel(Security, Broker, "Публикует: тревога, постановка,
 Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
 Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны, удаление и восстановление зон", "AMQP")
 Rel(Broker, HouseConfigurator, "Доставляет: новые, удалённые и восстановленные приборы", "AMQP")
-Rel(Broker, Notification, "Доставляет: события приборов, охраны и сценариев", "AMQP")
+Rel(Broker, Notification, "Доставляет: состояние приборов, события охраны и сценариев", "AMQP")
 
 Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
 Rel(Broker, Users, "Доставляет: зона удалена, зона восстановлена", "AMQP")

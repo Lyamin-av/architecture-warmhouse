@@ -26,10 +26,10 @@ System_Ext(notify, "Сервис уведомлений", "Доставка push
 Rel(user, apps, "Использует")
 Rel(apps, Gateway, "Все запросы", "HTTPS")
 Rel(Gateway, Notification, "Настройки уведомлений", "HTTPS")
-Rel(Telematics, Broker, "Публикует: события приборов", "AMQP")
+Rel(Telematics, Broker, "Публикует: состояние приборов", "AMQP")
 Rel(Security, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
 Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
-Rel(Broker, Notification, "Доставляет: события приборов, охраны и сценариев", "AMQP")
+Rel(Broker, Notification, "Доставляет: состояние приборов, события охраны и сценариев", "AMQP")
 Rel(Notification, Users, "Получатели по дому и ролям, контакты", "HTTPS")
 Rel(Notification, notify, "Доставка push, SMS, email", "HTTPS")
 
