@@ -11,17 +11,22 @@ System_Boundary(Warmhouse, "Умный дом") {
     Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
     Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
     ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
-    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логирование")
+    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логины и почты (копия из профиля), токены обновления и сброса пароля, логирование")
 }
+
+System_Ext(notify, "Сервис уведомлений", "Доставка push, SMS и email")
 
 
 Rel(user, apps, "Использует")
 Rel(apps, Gateway, "Все запросы", "HTTPS")
-Rel(Gateway, Authentication, "Вход", "HTTPS")
+Rel(Gateway, Authentication, "Вход, обновление токена, сброс пароля", "HTTPS")
+Rel(Gateway, Authentication, "Публичный ключ для проверки токена", "HTTPS")
 Rel(Gateway, Users, "Регистрация, роли", "HTTPS")
 Rel(Users, Authentication, "Создаёт учётные данные при регистрации", "HTTPS")
+Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
 
 Rel(Users, dbUsers, "Читает и пишет", "SQL")
+Rel(Authentication, notify, "Письмо для сброса пароля", "HTTPS")
 Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
 
 SHOW_LEGEND()
