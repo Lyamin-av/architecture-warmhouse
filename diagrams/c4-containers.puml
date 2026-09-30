@@ -14,7 +14,7 @@ System_Boundary(Warmhouse, "Умный дом") {
     ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
 
     Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
-    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы, последние показания зон")
 
     Container(Lighting, "Управление освещением", ".NET", "Микросервис")
     Container(GateControl, "Управление воротами", ".NET", "Микросервис")
@@ -81,7 +81,7 @@ Rel(Users, Authentication, "Создаёт учётные данные при р
 Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
 
 ' --- Команды к приборам (только через контексты своего типа и телематику) ---
-Rel(Heating, Telematics, "Команды, запрос показаний", "HTTPS")
+Rel(Heating, Telematics, "Команды", "HTTPS")
 Rel(Lighting, Telematics, "Команды", "HTTPS")
 Rel(GateControl, Telematics, "Команды", "HTTPS")
 Rel(VideoControl, Telematics, "Команды камерам", "HTTPS")
@@ -123,7 +123,7 @@ Rel(Broker, Notification, "Доставляет: события приборов
 Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
 Rel(Broker, Users, "Доставляет: зона удалена, зона восстановлена", "AMQP")
 Rel(Broker, Security, "Доставляет: зона удалена, зона восстановлена", "AMQP")
-Rel(Broker, Heating, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Heating, "Доставляет: показания приборов, зона удалена, зона восстановлена", "AMQP")
 Rel(Broker, VideoControl, "Доставляет: зона удалена, зона восстановлена", "AMQP")
 
 ' --- Уведомления ---

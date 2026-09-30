@@ -22,7 +22,7 @@ Container_Boundary(Telematics, "Модуль телематики") {
 }
 
 Rel(Gateway, api, "Сопряжение, настройка, показания", "HTTPS")
-Rel(Heating, api, "Команды, запрос показаний", "HTTPS")
+Rel(Heating, api, "Команды", "HTTPS")
 Rel(Lighting, api, "Команды", "HTTPS")
 Rel(GateControl, api, "Команды", "HTTPS")
 Rel(VideoControl, api, "Команды камерам", "HTTPS")
