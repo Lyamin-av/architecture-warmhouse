@@ -129,6 +129,8 @@ package "БД Конфигурации дома" {
     * house_id : uuid <<FK>>
     plan_id : uuid <<FK>>
     zone_id : uuid <<FK>>
+    * category_code : string <<ext: Интеграция приборов>>
+    * kind : enum (датчик, исполнительное устройство, модуль управления)
     x : decimal
     y : decimal
     * is_placed : bool
@@ -169,6 +171,19 @@ package "БД Телематики" {
     * unit : string
     * measured_at : datetime
   }
+  entity "device_commands\nКоманда" as device_commands {
+    * id : uuid <<PK>>
+    --
+    * device_id : uuid <<FK>>
+    * command_code : string
+    parameters : json
+    * initiator : enum (отопление, освещение, ворота, видеонаблюдение)
+    * correlation_id : uuid
+    * status : enum (отправлена, выполнена, ошибка, таймаут)
+    error_message : string
+    * sent_at : datetime
+    completed_at : datetime
+  }
 }
 
 package "БД Интеграции приборов" {
@@ -186,12 +201,21 @@ package "БД Интеграции приборов" {
     * code : string <<unique>>
     * name : string
   }
+  entity "category_commands\nКоманда категории" as category_commands {
+    * id : uuid <<PK>>
+    --
+    * category_id : uuid <<FK>>
+    * code : string
+    * name : string
+    parameters_schema : json
+  }
   entity "device_models\nМодель прибора" as device_models {
     * id : uuid <<PK>>
     --
     * adapter_id : uuid <<FK>>
     * category_id : uuid <<FK>>
     * name : string
+    * kind : enum (датчик, исполнительное устройство, модуль управления)
     manufacturer : string
     model : string
     * is_universal : bool
@@ -209,6 +233,7 @@ package "БД Интеграции приборов" {
     * id : uuid <<PK>>
     --
     * device_model_id : uuid <<FK>>
+    * category_command_id : uuid <<FK>>
     * code : string
     * name : string
     parameters_schema : json
@@ -393,11 +418,14 @@ zones |o-[thickness=2]-o{ placed_devices
 devices |o-[thickness=2]-o{ devices : хаб
 devices ||-[thickness=2]-|| device_settings
 devices ||-[thickness=2]-o{ readings
+devices ||-[thickness=2]-o{ device_commands
 
 adapters ||-[thickness=2]-o{ device_models
 device_categories ||-[thickness=2]-o{ device_models
 device_models ||-[thickness=2]-o{ model_quantities
 device_models ||-[thickness=2]-o{ model_commands
+device_categories ||-[thickness=2]-o{ category_commands
+category_commands ||-[thickness=2]-o{ model_commands
 
 security_states ||-[thickness=2]-o{ alarms
 
@@ -417,6 +445,7 @@ zones |o.[#888888].o{ role_device_perms
 device_categories |o.[#888888].o{ role_device_perms
 
 devices ||.[#888888].|| placed_devices
+device_categories ||.[#888888].o{ placed_devices
 houses ||.[#888888].o{ devices
 device_models ||.[#888888].o{ devices
 model_quantities ||.[#888888].o{ readings
