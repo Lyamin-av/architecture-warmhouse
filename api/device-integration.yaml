@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: Интеграция приборов (Device Integration Service)
+  version: 1.0.0
+  description: |
+    API микросервиса «Интеграция приборов»: каталог типов приборов и адаптеры
+    протоколов (anti-corruption layer между протоколами партнёров и единой моделью).
+
+    В этой спецификации описан один асинхронный эндпоинт — передача команды прибору.
+    Адаптер выбирается по типу прибора внутри сервиса.
+    Результат от прибора публикуется в брокер внутренним событием
+    «результат команды от адаптера» (с `commandId`); на него подписана только «Телематика».
+
+    Вызывающий: «Телематика».
+servers:
+  - url: http://device-integration-service
+    description: Внутренний адрес сервиса
+security:
+  - bearerAuth: []
+tags:
+  - name: Адаптеры протоколов
+paths:
+  /commands:
+    post:
+      tags: [Адаптеры протоколов]
+      operationId: dispatchCommand
+      summary: Передать команду прибору через адаптер протокола
+      description: |
+        По `deviceTypeId` находит тип прибора и его адаптер, проверяет команду
+        и параметры по каталогу, переводит команду в протокол партнёра и отправляет прибору.
+        Ответ не ждёт выполнения на приборе.
+      parameters:
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          description: Сквозной идентификатор цепочки вызовов (для журналов и события с результатом)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdapterCommandRequest'
+            example:
+              commandId: 4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8
+              deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
+              deviceTypeId: 3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a
+              address: 'zigbee:0x00124b0018e2a1f3'
+              commandCode: set_power
+              parameters:
+                on: true
+      responses:
+        '202':
+          description: Команда передана адаптеру; результат придёт событием «результат команды от адаптера»
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterCommandAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Тип прибора не найден в каталоге
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Тип прибора не поддерживает команду или параметры не соответствуют схеме
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AdapterCommandRequest:
+      type: object
+      required: [commandId, deviceId, deviceTypeId, address, commandCode]
+      properties:
+        commandId:
+          type: string
+          format: uuid
+          description: Идентификатор команды из журнала «Телематики»; вернётся в событии с результатом
+        deviceId:
+          type: string
+          format: uuid
+        deviceTypeId:
+          type: string
+          format: uuid
+          description: Тип прибора из каталога; по нему выбирается адаптер
+        address:
+          type: string
+          description: Адрес прибора в протоколе партнёра (из настроек прибора)
+        commandCode:
+          type: string
+          description: Код команды из каталога («Команда типа»)
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Параметры команды по схеме из каталога
+    AdapterCommandAccepted:
+      type: object
+      required: [commandId, adapterId, acceptedAt]
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        adapterId:
+          type: string
+          format: uuid
+          description: Выбранный адаптер протокола (для журналов)
+        acceptedAt:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      description: Описание ошибки (RFC 7807)
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Нет или недействителен токен
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

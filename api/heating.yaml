@@ -1,0 +1,181 @@
+openapi: 3.0.3
+info:
+  title: Отопление (Heating Service)
+  version: 1.0.0
+  description: |
+    API микросервиса «Отопление». Хранит температурный режим зоны (цель)
+    и добивается его командами приборам через «Телематику».
+
+    Вызывающие: API Gateway (запрос пользователя), «Автоматизация» (действие сценария).
+
+    Режим сохраняется синхронно. Применение режима к приборам — асинхронное:
+    итог публикуется в брокер событием «режим применён / не применён»
+    с тем же `X-Correlation-Id`.
+servers:
+  - url: http://heating-service
+    description: Внутренний адрес сервиса (за API Gateway)
+security:
+  - bearerAuth: []
+tags:
+  - name: Температурные режимы
+paths:
+  /zones/{zoneId}/temperature-mode:
+    put:
+      tags: [Температурные режимы]
+      operationId: setZoneTemperatureMode
+      summary: Задать температурный режим зоны
+      description: |
+        Создаёт или заменяет режим зоны (в зоне не больше одного режима).
+        После сохранения сервис сразу запрашивает внеочередной опрос приборов зоны
+        и отдаёт команды через «Телематику».
+      parameters:
+        - $ref: '#/components/parameters/ZoneId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemperatureModeRequest'
+            example:
+              houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+              targetTemperature: 22.0
+              mode: comfort
+      responses:
+        '200':
+          description: Режим сохранён; применение к приборам выполняется асинхронно
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemperatureMode'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Зона удалена — режимы зоны приостановлены
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ZoneId:
+      name: zoneId
+      in: path
+      required: true
+      description: Идентификатор зоны (владелец — «Конфигурация дома»)
+      schema:
+        type: string
+        format: uuid
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: |
+        Сквозной идентификатор цепочки вызовов. «Автоматизация» передаёт
+        идентификатор выполнения сценария; если заголовка нет, сервис создаёт его сам.
+        Передаётся дальше в команды «Телематике» и возвращается в итоговом событии.
+      schema:
+        type: string
+        format: uuid
+  headers:
+    CorrelationId:
+      description: Сквозной идентификатор цепочки (полученный или созданный)
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Mode:
+      type: string
+      enum: [comfort, eco, off]
+      description: Режим — комфорт, эко, выключено
+    TemperatureModeRequest:
+      type: object
+      required: [houseId, targetTemperature, mode]
+      properties:
+        houseId:
+          type: string
+          format: uuid
+          description: Дом, к которому относится зона
+        targetTemperature:
+          type: number
+          format: decimal
+          minimum: 5
+          maximum: 35
+          description: Целевая температура, °C
+        mode:
+          $ref: '#/components/schemas/Mode'
+    TemperatureMode:
+      type: object
+      required: [id, zoneId, houseId, targetTemperature, mode, isSuspended, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        targetTemperature:
+          type: number
+          format: decimal
+        mode:
+          $ref: '#/components/schemas/Mode'
+        isSuspended:
+          type: boolean
+          description: Режим приостановлен (зона удалена)
+        updatedAt:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      description: Описание ошибки (RFC 7807)
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+  responses:
+    BadRequest:
+      description: Некорректный запрос (например, температура вне диапазона)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Нет или недействителен токен
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Нет права управлять отоплением в этой зоне
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Зона не найдена
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

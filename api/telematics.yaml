@@ -1,0 +1,216 @@
+openapi: 3.0.3
+info:
+  title: Телематика (Telematics Service)
+  version: 1.0.0
+  description: |
+    API микросервиса «Телематика» — хозяина прибора, единственного пути команд
+    к приборам и единственного источника показаний.
+
+    В этой спецификации описаны два асинхронных эндпоинта:
+    - команда прибору — результат публикуется в брокер событием «результат команды»
+      (выполнена / ошибка / таймаут) с `commandId`, инициатором и `correlationId`;
+    - внеочередной опрос — показание публикуется событием «показания».
+
+    Вызывающие: «Отопление», «Освещение», «Ворота», «Видеонаблюдение».
+servers:
+  - url: http://telematics-service
+    description: Внутренний адрес сервиса
+security:
+  - bearerAuth: []
+tags:
+  - name: Команды
+  - name: Опрос
+paths:
+  /devices/{deviceId}/commands:
+    post:
+      tags: [Команды]
+      operationId: sendDeviceCommand
+      summary: Отправить команду прибору
+      description: |
+        Проверяет, что прибор существует и его тип принимает команду, записывает
+        команду в журнал команд со статусом `sent` и передаёт её в «Интеграцию приборов».
+        Ответ не ждёт выполнения на приборе.
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+            example:
+              initiator: heating
+              commandCode: set_power
+              parameters:
+                on: true
+      responses:
+        '202':
+          description: Команда принята; результат придёт событием «результат команды»
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandAccepted'
+              example:
+                commandId: 4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8
+                deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
+                correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+                status: sent
+                sentAt: '2026-10-01T18:30:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/DeviceNotFound'
+        '409':
+          description: Прибор удалён (в архиве)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Тип прибора не поддерживает команду
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /devices/{deviceId}/polls:
+    post:
+      tags: [Опрос]
+      operationId: requestDevicePoll
+      summary: Внеочередной опрос прибора
+      description: |
+        Запрашивает показания прибора вне планового расписания.
+        Показания публикуются событием «показания» с тем же `correlationId`.
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '202':
+          description: Опрос принят; показания придут событием «показания»
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/DeviceNotFound'
+        '409':
+          description: Прибор удалён (в архиве)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      description: Идентификатор прибора, выданный при сопряжении
+      schema:
+        type: string
+        format: uuid
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: |
+        Сквозной идентификатор цепочки вызовов. Сохраняется в журнале команд,
+        передаётся в «Интеграцию приборов» и возвращается в событии с результатом.
+        Если заголовка нет, сервис создаёт его сам.
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Initiator:
+      type: string
+      enum: [heating, lighting, gate, video-control]
+      description: Сервис, отдавший команду; по нему подписчики отбирают результаты своих команд
+    CommandRequest:
+      type: object
+      required: [initiator, commandCode]
+      properties:
+        initiator:
+          $ref: '#/components/schemas/Initiator'
+        commandCode:
+          type: string
+          description: Код команды из каталога типов приборов («Команда типа»)
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Параметры команды по схеме из каталога типов приборов
+    CommandStatus:
+      type: string
+      enum: [sent, succeeded, failed, timeout]
+      description: Отправлена, выполнена, ошибка, таймаут
+    CommandAccepted:
+      type: object
+      required: [commandId, deviceId, correlationId, status, sentAt]
+      properties:
+        commandId:
+          type: string
+          format: uuid
+          description: Идентификатор команды в журнале; придёт в событии с результатом
+        deviceId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/CommandStatus'
+        sentAt:
+          type: string
+          format: date-time
+    PollAccepted:
+      type: object
+      required: [deviceId, correlationId, requestedAt]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        correlationId:
+          type: string
+          format: uuid
+        requestedAt:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      description: Описание ошибки (RFC 7807)
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Нет или недействителен токен
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    DeviceNotFound:
+      description: Прибор не найден
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
