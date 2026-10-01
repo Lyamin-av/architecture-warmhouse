@@ -29,7 +29,7 @@ Rel(Gateway, Heating, "Температурные режимы", "HTTPS")
 Rel(Gateway, Lighting, "Управление светом", "HTTPS")
 Rel(Gateway, GateControl, "Управление воротами", "HTTPS")
 Rel(Heating, HouseConfigurator, "Зоны плана, приборы зоны по категории и виду", "HTTPS")
-Rel(Heating, Telematics, "Команды, внеочередной опрос", "HTTPS")
+Rel(Heating, Telematics, "Команды", "HTTPS")
 Rel(Telematics, Broker, "Публикует: показания приборов, результат команды", "AMQP")
 Rel(Broker, Heating, "Доставляет: показания приборов, результат команды", "AMQP")
 Rel(Broker, Lighting, "Доставляет: результат команды", "AMQP")
@@ -38,7 +38,7 @@ Rel(DeviceIntegration, Broker, "Публикует: результат кома�
 Rel(Broker, Telematics, "Доставляет: результат команды от адаптера", "AMQP")
 
 note right of Broker
-  Команды и опрос асинхронные: сервис отвечает
+  Команды асинхронные: сервис отвечает
   «принято», результат приходит событием.
   Все вызовы и события несут correlationId.
   Подписчики «результата команды» вне сценария:

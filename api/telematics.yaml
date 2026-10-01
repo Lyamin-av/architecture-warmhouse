@@ -6,10 +6,9 @@ info:
     API микросервиса «Телематика» — хозяина прибора, единственного пути команд
     к приборам и единственного источника показаний.
 
-    В этой спецификации описаны два асинхронных эндпоинта:
-    - команда прибору — результат публикуется в брокер событием «результат команды»
-      (выполнена / ошибка / таймаут) с `commandId`, инициатором и `correlationId`;
-    - внеочередной опрос — показание публикуется событием «показания».
+    В этой спецификации описан асинхронный эндпоинт «команда прибору»:
+    результат публикуется в брокер событием «результат команды»
+    (выполнена / ошибка / таймаут) с `commandId`, инициатором и `correlationId`.
 
     Вызывающие: «Отопление», «Освещение», «Ворота», «Видеонаблюдение».
 servers:
@@ -19,7 +18,6 @@ security:
   - bearerAuth: []
 tags:
   - name: Команды
-  - name: Опрос
 paths:
   /devices/{deviceId}/commands:
     post:
@@ -71,34 +69,6 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '422':
           description: Команда не входит в единую модель команд категории прибора
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-  /devices/{deviceId}/polls:
-    post:
-      tags: [Опрос]
-      operationId: requestDevicePoll
-      summary: Внеочередной опрос прибора
-      description: |
-        Запрашивает показания прибора вне планового расписания.
-        Показания публикуются событием «показания» с тем же `correlationId`.
-      parameters:
-        - $ref: '#/components/parameters/DeviceId'
-        - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '202':
-          description: Опрос принят; показания придут событием «показания»
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PollAccepted'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/DeviceNotFound'
-        '409':
-          description: Прибор удалён (в архиве)
           content:
             application/problem+json:
               schema:
@@ -171,19 +141,6 @@ components:
         status:
           $ref: '#/components/schemas/CommandStatus'
         sentAt:
-          type: string
-          format: date-time
-    PollAccepted:
-      type: object
-      required: [deviceId, correlationId, requestedAt]
-      properties:
-        deviceId:
-          type: string
-          format: uuid
-        correlationId:
-          type: string
-          format: uuid
-        requestedAt:
           type: string
           format: date-time
     Problem:

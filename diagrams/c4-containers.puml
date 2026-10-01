@@ -81,7 +81,7 @@ Rel(Users, Authentication, "Создаёт учётные данные при р
 Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
 
 ' --- Команды к приборам (только через контексты своей категории и телематику) ---
-Rel(Heating, Telematics, "Команды, внеочередной опрос", "HTTPS")
+Rel(Heating, Telematics, "Команды", "HTTPS")
 Rel(Lighting, Telematics, "Команды", "HTTPS")
 Rel(GateControl, Telematics, "Команды", "HTTPS")
 Rel(VideoControl, Telematics, "Команды камерам", "HTTPS")
