@@ -53,6 +53,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TemperatureMode'
+              example:
+                id: 6e7f8a9b-0c1d-4e2f-3a4b-5c6d7e8f9a0b
+                zoneId: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
+                houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+                targetTemperature: 22.0
+                mode: comfort
+                isSuspended: false
+                updatedAt: '2026-10-01T18:30:00Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
