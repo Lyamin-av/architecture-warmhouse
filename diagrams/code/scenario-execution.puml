@@ -1,0 +1,283 @@
+@startuml scenario-execution
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+title Диаграмма кода: компонент «Выполнение сценариев» (Модуль автоматизации)
+
+package "Входы" {
+  class AutomationEventSubscriber <<компонент «Подписчик на события»>> {
+    -_executor: ScenarioExecutor
+    +OnMessageAsync(e: IDomainEvent): Task
+  }
+  class ScheduleTimer <<BackgroundService>> {
+    -_executor: ScenarioExecutor
+    +ScheduleTimer(executor: ScenarioExecutor)
+    #ExecuteAsync(ct: CancellationToken): Task
+  }
+  class ScenariosController <<компонент «API-контроллер»>> {
+    -_executor: ScenarioExecutor
+    +Run(scenarioId: Guid): Task<IActionResult>
+  }
+  interface IDomainEvent {
+    +HouseId: Guid
+    +OccurredAt: DateTime
+  }
+  class DeviceReadingReceived {
+    +HouseId: Guid
+    +OccurredAt: DateTime
+    +DeviceId: Guid
+    +Value: decimal
+    +Unit: string
+  }
+  class DeviceStateChanged {
+    +HouseId: Guid
+    +OccurredAt: DateTime
+    +DeviceId: Guid
+    +State: DeviceState
+  }
+  class SecurityEventOccurred {
+    +HouseId: Guid
+    +OccurredAt: DateTime
+    +Type: SecurityEventType
+  }
+  IDomainEvent <|.. DeviceReadingReceived
+  IDomainEvent <|.. DeviceStateChanged
+  IDomainEvent <|.. SecurityEventOccurred
+}
+
+package "Выполнение" {
+  class ScenarioExecutor {
+    -_repository: IScenarioRepository
+    -_stateStore: IHouseStateStore
+    -_publisher: IScenarioEventPublisher
+    +ScenarioExecutor(repository: IScenarioRepository, stateStore: IHouseStateStore, publisher: IScenarioEventPublisher)
+    +HandleAsync(e: IDomainEvent): Task
+    +OnTimeAsync(now: DateTime): Task
+    +RunManuallyAsync(scenarioId: Guid): Task<bool>
+    -RunAsync(s: Scenario): Task
+  }
+  class TriggerContext {
+    +Kind: TriggerKind
+    +Event: IDomainEvent?
+    +Now: DateTime
+    +{static} ForEvent(e: IDomainEvent): TriggerContext
+    +{static} ForTime(now: DateTime): TriggerContext
+    +{static} ForManual(): TriggerContext
+  }
+  enum TriggerKind {
+    Event
+    Time
+    Manual
+  }
+  interface IScenarioRepository {
+    +GetActiveAsync(houseId: Guid): Task<List<Scenario>>
+    +GetActiveWithScheduleAsync(): Task<List<Scenario>>
+    +GetAsync(id: Guid): Task<Scenario>
+  }
+  interface IHouseStateStore {
+    +ApplyAsync(e: IDomainEvent): Task
+    +GetAsync(houseId: Guid): Task<HouseState>
+  }
+  class HouseState {
+    +HouseId: Guid
+    +Now: DateTime
+    +Readings: Dictionary<Guid, decimal>
+    +DeviceStates: Dictionary<Guid, DeviceState>
+    +Security: SecurityState
+    +GetReading(deviceId: Guid): decimal?
+    +GetDeviceState(deviceId: Guid): DeviceState?
+  }
+  interface IScenarioEventPublisher {
+    +PublishTriggeredAsync(e: ScenarioTriggered): Task
+  }
+  class ScenarioTriggered {
+    +ScenarioId: Guid
+    +HouseId: Guid
+    +TriggeredAt: DateTime
+  }
+  TriggerContext ..> TriggerKind
+  IHouseStateStore ..> HouseState : возвращает
+  IScenarioEventPublisher ..> ScenarioTriggered
+}
+
+package "Модель сценария" {
+  class Scenario {
+    +Id: Guid
+    +HouseId: Guid
+    +Name: string
+    +IsEnabled: bool
+    +IsBroken: bool
+    +Triggers: List<ITrigger>
+    +Condition: ICondition?
+    +Actions: List<IAction>
+    +IsTriggeredBy(ctx: TriggerContext): bool
+    +ConditionsMet(state: HouseState): bool
+  }
+
+  interface ITrigger {
+    +Fires(ctx: TriggerContext): bool
+  }
+  class DeviceReadingTrigger {
+    +DeviceId: Guid
+    +Fires(ctx: TriggerContext): bool
+  }
+  class DeviceStateTrigger {
+    +DeviceId: Guid
+    +Fires(ctx: TriggerContext): bool
+  }
+  class SecurityEventTrigger {
+    +Type: SecurityEventType
+    +Fires(ctx: TriggerContext): bool
+  }
+  class ScheduleTrigger {
+    +Cron: string
+    +Fires(ctx: TriggerContext): bool
+  }
+  class ManualTrigger {
+    +Fires(ctx: TriggerContext): bool
+  }
+
+  interface ICondition {
+    +IsSatisfied(state: HouseState): bool
+  }
+  class ReadingThresholdCondition {
+    +DeviceId: Guid
+    +Operator: CompareOperator
+    +Threshold: decimal
+    +IsSatisfied(state: HouseState): bool
+  }
+  class DeviceStateCondition {
+    +DeviceId: Guid
+    +ExpectedState: DeviceState
+    +IsSatisfied(state: HouseState): bool
+  }
+  class SecurityStateCondition {
+    +Expected: SecurityState
+    +IsSatisfied(state: HouseState): bool
+  }
+  class TimeRangeCondition {
+    +From: TimeOnly
+    +To: TimeOnly
+    +IsSatisfied(state: HouseState): bool
+  }
+  class ConditionGroup {
+    +Operator: LogicalOperator
+    +Children: List<ICondition>
+    +IsSatisfied(state: HouseState): bool
+  }
+  enum LogicalOperator {
+    And
+    Or
+  }
+  enum CompareOperator {
+    Greater
+    Less
+    Equal
+  }
+
+  interface IAction {
+    +ExecuteAsync(): Task
+  }
+  class HeatingAction {
+    +ZoneId: Guid
+    +Mode: string
+    -_api: IHeatingApi
+    +ExecuteAsync(): Task
+  }
+  class LightingAction {
+    +DeviceId: Guid
+    +TurnOn: bool
+    -_api: ILightingApi
+    +ExecuteAsync(): Task
+  }
+  class GateAction {
+    +DeviceId: Guid
+    +Open: bool
+    -_api: IGateApi
+    +ExecuteAsync(): Task
+  }
+  class CameraAction {
+    +CameraId: Guid
+    +Command: string
+    -_api: IVideoApi
+    +ExecuteAsync(): Task
+  }
+  class ArmSecurityAction {
+    +HouseId: Guid
+    -_api: ISecurityApi
+    +ExecuteAsync(): Task
+  }
+
+  ITrigger <|.. DeviceReadingTrigger
+  ITrigger <|.. DeviceStateTrigger
+  ITrigger <|.. SecurityEventTrigger
+  ITrigger <|.. ScheduleTrigger
+  ITrigger <|.. ManualTrigger
+  ICondition <|.. ReadingThresholdCondition
+  ICondition <|.. DeviceStateCondition
+  ICondition <|.. SecurityStateCondition
+  ICondition <|.. TimeRangeCondition
+  ICondition <|.. ConditionGroup
+  ConditionGroup "1" o-- "1..*" ICondition : вложенные условия
+  ConditionGroup ..> LogicalOperator
+  ReadingThresholdCondition ..> CompareOperator
+  IAction <|.. HeatingAction
+  IAction <|.. LightingAction
+  IAction <|.. GateAction
+  IAction <|.. CameraAction
+  IAction <|.. ArmSecurityAction
+  Scenario "1" *-- "1..*" ITrigger : при
+  Scenario "1" *-- "0..1" ICondition : если
+  Scenario "1" *-- "1..*" IAction : то
+}
+
+package "Вызовы контекстов типов приборов (HTTPS)" {
+  interface IHeatingApi {
+    +SetModeAsync(zoneId: Guid, mode: string): Task
+  }
+  interface ILightingApi {
+    +SwitchAsync(deviceId: Guid, turnOn: bool): Task
+  }
+  interface IGateApi {
+    +SetStateAsync(deviceId: Guid, open: bool): Task
+  }
+  interface IVideoApi {
+    +SendCommandAsync(cameraId: Guid, command: string): Task
+  }
+  interface ISecurityApi {
+    +ArmAsync(houseId: Guid): Task
+  }
+}
+
+AutomationEventSubscriber --> ScenarioExecutor : HandleAsync на каждое событие
+ScheduleTimer --> ScenarioExecutor : OnTimeAsync раз в минуту
+ScenariosController --> ScenarioExecutor : RunManuallyAsync по кнопке «Запустить»
+AutomationEventSubscriber ..> IDomainEvent
+ScenarioExecutor ..> IDomainEvent : принимает
+ScenarioExecutor --> IScenarioRepository
+ScenarioExecutor --> IHouseStateStore : обновляет и читает состояние
+ScenarioExecutor --> IScenarioEventPublisher
+ScenarioExecutor ..> TriggerContext : создаёт
+ScenarioExecutor ..> Scenario : проверяет и запускает
+ITrigger ..> TriggerContext
+ICondition ..> HouseState
+HeatingAction --> IHeatingApi
+LightingAction --> ILightingApi
+GateAction --> IGateApi
+CameraAction --> IVideoApi
+ArmSecurityAction --> ISecurityApi
+
+note bottom of Scenario
+  Сценарий: ПРИ [любой из триггеров] ЕСЛИ [условие] ТО [действия].
+  Триггер — когда проверять: событие, расписание, ручной запуск.
+  Условие — проверка текущего состояния дома (последние показания,
+  состояния приборов, режим охраны, время), необязательно;
+  комбинируется через ConditionGroup (И / ИЛИ):
+  «температура выше 22 °C И (дом на охране ИЛИ с 23:00 до 7:00)».
+  Все три входа идут одним путём: IsTriggeredBy → ConditionsMet → RunAsync.
+  Сценарий запускается, только если включён и не помечен неработающим.
+end note
+
+@enduml
