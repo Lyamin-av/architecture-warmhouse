@@ -74,7 +74,6 @@ package "БД Пользователей" {
     house_id : uuid <<ext: Конфигурация дома>>
     * name : string
     * is_predefined : bool
-    * all_zones : bool
   }
   entity "permissions\nПраво" as permissions {
     * id : uuid <<PK>>
@@ -83,7 +82,7 @@ package "БД Пользователей" {
     * name : string
     * scope : enum (приборы, система)
   }
-  entity "role_permissions\nРоль — право" as role_permissions {
+  entity "role_device_permissions\nПраво роли на приборы" as role_device_perms {
     * id : uuid <<PK>>
     --
     * role_id : uuid <<FK>>
@@ -91,6 +90,10 @@ package "БД Пользователей" {
     zone_id : uuid <<ext: Конфигурация дома>>
     device_category_id : uuid <<ext: Интеграция приборов>>
     * is_zone_deleted : bool
+  }
+  entity "role_system_permissions\nСистемное право роли" as role_system_perms {
+    * role_id : uuid <<PK, FK>>
+    * permission_id : uuid <<PK, FK>>
   }
   entity "house_memberships\nНазначение роли" as memberships {
     * id : uuid <<PK>>
@@ -372,9 +375,10 @@ package "БД Уведомлений" {
   }
 }
 
-note bottom of device_categories
-  Служебная категория «All» означает
-  «все категории» в правах роли
+note bottom of role_device_perms
+  Пустое значение означает «все»:
+  zone_id — все зоны дома, включая будущие;
+  device_category_id — все категории приборов
 end note
 
 ' ---------- Связи внутри БД (FK) ----------
@@ -384,8 +388,10 @@ credentials |o-[thickness=2]-o{ login_attempts
 
 users ||-[thickness=2]-o{ memberships
 roles ||-[thickness=2]-o{ memberships
-roles ||-[thickness=2]-o{ role_permissions
-permissions ||-[thickness=2]-o{ role_permissions
+roles ||-[thickness=2]-o{ role_device_perms
+permissions ||-[thickness=2]-o{ role_device_perms
+roles ||-[thickness=2]-o{ role_system_perms
+permissions ||-[thickness=2]-o{ role_system_perms
 
 houses ||-[thickness=2]-|{ plans
 plans ||-[thickness=2]-o{ zones
@@ -416,8 +422,8 @@ notif_templates ||-[thickness=2]-o{ sent_notifications
 users ||.[#888888].|| credentials
 houses |o.[#888888].o{ roles
 houses ||.[#888888].o{ memberships
-zones |o.[#888888].o{ role_permissions
-device_categories |o.[#888888].o{ role_permissions
+zones |o.[#888888].o{ role_device_perms
+device_categories |o.[#888888].o{ role_device_perms
 
 devices ||.[#888888].|| placed_devices
 houses ||.[#888888].o{ devices
