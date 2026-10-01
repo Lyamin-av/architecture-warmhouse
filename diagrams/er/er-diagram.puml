@@ -1,0 +1,423 @@
+@startuml er-diagram
+' ER-диаграмма «Умный дом» (To-Be), логический уровень, нотация «воронья лапка»
+' Сплошная линия — FK внутри одной БД; пунктир — логическая ссылка между БД разных сервисов (без FK)
+' Атрибут-ссылка в другую БД помечен <<ext: сервис>>
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 60
+hide circle
+hide empty members
+
+package "БД Аутентификации" {
+  entity "credentials\nУчётные данные" as credentials {
+    * user_id : uuid <<PK>> <<ext: Пользователи>>
+    --
+    * login : string <<unique>>
+    * email : string <<unique>>
+    * password_hash : string
+    * password_changed_at : datetime
+    * created_at : datetime
+  }
+  entity "refresh_tokens\nТокен обновления" as refresh_tokens {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * token_hash : string
+    * expires_at : datetime
+    revoked_at : datetime
+    * created_at : datetime
+  }
+  entity "password_reset_tokens\nТокен сброса пароля" as reset_tokens {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * token_hash : string
+    * expires_at : datetime
+    used_at : datetime
+    * created_at : datetime
+  }
+  entity "login_attempts\nПопытка входа" as login_attempts {
+    * id : bigint <<PK>>
+    --
+    user_id : uuid <<FK>>
+    * login_entered : string
+    * is_success : bool
+    * ip_address : string
+    * attempted_at : datetime
+  }
+}
+
+package "БД Пользователей" {
+  entity "users\nПользователь" as users {
+    * id : uuid <<PK>>
+    --
+    * login : string <<unique>>
+    * email : string <<unique>>
+    * name : string
+    phone : string
+    * is_deleted : bool
+    * created_at : datetime
+  }
+  entity "roles\nРоль" as roles {
+    * id : uuid <<PK>>
+    --
+    house_id : uuid <<ext: Конфигурация дома>>
+    * name : string
+    * is_system : bool
+  }
+  entity "permissions\nДействие (право)" as permissions {
+    * id : uuid <<PK>>
+    --
+    * code : string <<unique>>
+    * name : string
+  }
+  entity "role_permissions\nРоль — право" as role_permissions {
+    * role_id : uuid <<PK, FK>>
+    * permission_id : uuid <<PK, FK>>
+  }
+  entity "house_memberships\nНазначение роли" as memberships {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * house_id : uuid <<ext: Конфигурация дома>>
+    * role_id : uuid <<FK>>
+    * assigned_at : datetime
+  }
+  entity "zone_visibility\nВидимость зон" as zone_visibility {
+    * membership_id : uuid <<PK, FK>>
+    * zone_id : uuid <<PK>> <<ext: Конфигурация дома>>
+    --
+    * is_zone_deleted : bool
+  }
+}
+
+package "БД Конфигурации дома" {
+  entity "houses\nДом" as houses {
+    * id : uuid <<PK>>
+    --
+    * owner_user_id : uuid <<ext: Пользователи>>
+    * name : string
+    address : string
+    * created_at : datetime
+  }
+  entity "plans\nПлан" as plans {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<FK>>
+    * name : string
+    * kind : enum (этаж, участок)
+    floor_number : int
+    background_url : string
+  }
+  entity "zones\nЗона" as zones {
+    * id : uuid <<PK>>
+    --
+    * plan_id : uuid <<FK>>
+    * name : string
+    * kind : enum (помещение, периметр, прочее)
+    * contour : json
+    * is_deleted : bool
+    deleted_at : datetime
+  }
+  entity "placed_devices\nПрибор на плане" as placed_devices {
+    * device_id : uuid <<PK>> <<ext: Телематика>>
+    --
+    * house_id : uuid <<FK>>
+    plan_id : uuid <<FK>>
+    zone_id : uuid <<FK>>
+    x : decimal
+    y : decimal
+    * is_placed : bool
+    * is_deleted : bool
+    deleted_at : datetime
+  }
+}
+
+package "БД Телематики" {
+  entity "devices\nПрибор" as devices {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ext: Конфигурация дома>>
+    * device_type_id : uuid <<ext: Интеграция приборов>>
+    hub_id : uuid <<FK>>
+    * serial_number : string
+    * name : string
+    * state : enum (в сети, не в сети, неисправен)
+    last_seen_at : datetime
+    * paired_at : datetime
+    * is_deleted : bool
+    deleted_at : datetime
+  }
+  entity "device_settings\nНастройки прибора" as device_settings {
+    * device_id : uuid <<PK, FK>>
+    --
+    * poll_interval_sec : int
+    * address : string
+    calibration : json
+    * updated_at : datetime
+  }
+  entity "readings\nПоказание" as readings {
+    * id : bigint <<PK>>
+    --
+    * device_id : uuid <<FK>>
+    * quantity_id : uuid <<ext: Интеграция приборов>>
+    * value : decimal
+    * unit : string
+    * measured_at : datetime
+  }
+}
+
+package "БД Интеграции приборов" {
+  entity "protocol_adapters\nАдаптер протокола" as adapters {
+    * id : uuid <<PK>>
+    --
+    * protocol : string
+    * name : string
+    * version : string
+    settings : json
+  }
+  entity "device_types\nТип прибора" as device_types {
+    * id : uuid <<PK>>
+    --
+    * adapter_id : uuid <<FK>>
+    * name : string
+    manufacturer : string
+    model : string
+    * is_universal : bool
+  }
+  entity "type_quantities\nИзмеряемая величина" as type_quantities {
+    * id : uuid <<PK>>
+    --
+    * device_type_id : uuid <<FK>>
+    * code : string
+    * name : string
+    * unit : string
+    * value_type : enum (число, логическое, текст)
+  }
+  entity "type_commands\nКоманда типа" as type_commands {
+    * id : uuid <<PK>>
+    --
+    * device_type_id : uuid <<FK>>
+    * code : string
+    * name : string
+    parameters_schema : json
+  }
+}
+
+package "БД Отопления" {
+  entity "temperature_regimes\nТемпературный режим зоны" as regimes {
+    * id : uuid <<PK>>
+    --
+    * zone_id : uuid <<unique>> <<ext: Конфигурация дома>>
+    * house_id : uuid <<ext: Конфигурация дома>>
+    * target_temperature : decimal
+    * mode : enum (комфорт, эко, выключено)
+    * is_suspended : bool
+    * updated_at : datetime
+  }
+}
+
+package "БД Охраны" {
+  entity "security_states\nСостояние охраны" as security_states {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ext: Конфигурация дома>>
+    zone_id : uuid <<ext: Конфигурация дома>>
+    * object_kind : enum (дом, периметр)
+    * is_armed : bool
+    * mode : enum
+    * changed_at : datetime
+  }
+  entity "alarms\nТревога" as alarms {
+    * id : uuid <<PK>>
+    --
+    * security_state_id : uuid <<FK>>
+    * source : enum (датчик, видеоаналитика)
+    device_id : uuid <<ext: Телематика>>
+    * description : string
+    * occurred_at : datetime
+    acknowledged_at : datetime
+  }
+  entity "allowed_plates\nРазрешённый номер" as allowed_plates {
+    * id : uuid <<PK>>
+    --
+    * house_id : uuid <<ext: Конфигурация дома>>
+    * plate_number : string
+    comment : string
+    valid_until : datetime
+  }
+}
+
+package "БД Автоматизации" {
+  entity "scenario_templates\nШаблон сценария" as templates {
+    * id : uuid <<PK>>
+    --
+    house_id : uuid <<ext: Конфигурация дома>>
+    * name : string
+    description : string
+    * definition : json
+  }
+  entity "scenarios\nСценарий" as scenarios {
+    * id : uuid <<PK>>
+    --
+    * template_id : uuid <<FK>>
+    * house_id : uuid <<ext: Конфигурация дома>>
+    * name : string
+    * is_enabled : bool
+    * created_at : datetime
+  }
+  entity "triggers\nТриггер" as triggers {
+    * id : uuid <<PK>>
+    --
+    * scenario_id : uuid <<FK>>
+    * kind : enum (показание, состояние прибора, событие охраны, расписание, ручной)
+    device_id : uuid <<ext: Телематика>>
+    event_type : string
+    schedule : string
+  }
+  entity "conditions\nУсловие" as conditions {
+    * id : uuid <<PK>>
+    --
+    * scenario_id : uuid <<FK>>
+    parent_group_id : uuid <<FK>>
+    * kind : enum (группа, порог показания, состояние прибора, режим охраны, интервал времени)
+    logical_operator : enum (И, ИЛИ)
+    device_id : uuid <<ext: Телематика>>
+    quantity_code : string
+    compare_operator : enum
+    threshold : decimal
+    expected_state : string
+    time_from : time
+    time_to : time
+  }
+  entity "actions\nДействие" as actions {
+    * id : uuid <<PK>>
+    --
+    * scenario_id : uuid <<FK>>
+    * order_no : int
+    * kind : enum (отопление, свет, ворота, камера, постановка на охрану)
+    device_id : uuid <<ext: Телематика>>
+    zone_id : uuid <<ext: Конфигурация дома>>
+    * command : string
+    parameters : json
+  }
+  entity "device_state_projection\nСостояние прибора (проекция)" as device_projection {
+    * device_id : uuid <<PK>> <<ext: Телематика>>
+    --
+    * house_id : uuid
+    * state : string
+    last_values : json
+    * updated_at : datetime
+  }
+  entity "security_state_projection\nСостояние охраны (проекция)" as security_projection {
+    * security_state_id : uuid <<PK>> <<ext: Охрана>>
+    --
+    * house_id : uuid
+    zone_id : uuid
+    * is_armed : bool
+    * mode : string
+    * updated_at : datetime
+  }
+}
+
+package "БД Уведомлений" {
+  entity "notification_settings\nНастройки уведомлений" as notif_settings {
+    * id : uuid <<PK>>
+    --
+    * user_id : uuid <<ext: Пользователи>>
+    * channel : enum (push, SMS, email)
+    * event_type : string
+    * is_enabled : bool
+    * is_user_deleted : bool
+  }
+  entity "notification_templates\nШаблон уведомления" as notif_templates {
+    * id : uuid <<PK>>
+    --
+    * event_type : string
+    * channel : enum (push, SMS, email)
+    * title_template : string
+    * body_template : string
+  }
+  entity "sent_notifications\nОтправленное уведомление" as sent_notifications {
+    * id : uuid <<PK>>
+    --
+    * event_id : uuid
+    * event_type : string
+    * template_id : uuid <<FK>>
+    * house_id : uuid <<ext: Конфигурация дома>>
+    * recipient_user_id : uuid <<ext: Пользователи>>
+    * channel : enum (push, SMS, email)
+    * status : enum (в очереди, отправлено, доставлено, ошибка)
+    * attempts : int
+    error : string
+    * created_at : datetime
+    delivered_at : datetime
+  }
+}
+
+' ---------- Связи внутри БД (FK) ----------
+credentials ||--o{ refresh_tokens
+credentials ||--o{ reset_tokens
+credentials |o--o{ login_attempts
+
+users ||--o{ memberships
+roles ||--o{ memberships
+roles ||--o{ role_permissions
+permissions ||--o{ role_permissions
+memberships ||--o{ zone_visibility
+
+houses ||--|{ plans
+plans ||--o{ zones
+houses ||--o{ placed_devices
+plans |o--o{ placed_devices
+zones |o--o{ placed_devices
+
+devices |o--o{ devices : хаб
+devices ||--|| device_settings
+devices ||--o{ readings
+
+adapters ||--o{ device_types
+device_types ||--o{ type_quantities
+device_types ||--o{ type_commands
+
+security_states ||--o{ alarms
+
+templates ||--o{ scenarios
+scenarios ||--|{ triggers
+scenarios ||--o{ conditions
+conditions |o--o{ conditions : группа
+scenarios ||--|{ actions
+
+notif_templates ||--o{ sent_notifications
+
+' ---------- Логические ссылки между БД (без FK) ----------
+users ||..|| credentials
+users ||..o{ houses : владелец
+houses |o..o{ roles
+houses ||..o{ memberships
+zones ||..o{ zone_visibility
+
+devices ||..|| placed_devices
+houses ||..o{ devices
+device_types ||..o{ devices
+type_quantities ||..o{ readings
+
+zones ||..o| regimes
+
+houses ||..o{ security_states
+zones |o..o{ security_states
+devices |o..o{ alarms
+houses ||..o{ allowed_plates
+
+houses |o..o{ templates
+houses ||..o{ scenarios
+devices |o..o{ triggers
+devices |o..o{ conditions
+devices |o..o{ actions
+devices ||..o| device_projection
+security_states ||..o| security_projection
+
+users ||..o{ notif_settings
+users ||..o{ sent_notifications
+@enduml
