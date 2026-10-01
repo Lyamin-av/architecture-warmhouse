@@ -372,6 +372,11 @@ package "БД Уведомлений" {
   }
 }
 
+note bottom of device_categories
+  Служебная категория «All» означает
+  «все категории» в правах роли
+end note
+
 ' ---------- Связи внутри БД (FK) ----------
 credentials ||-[thickness=2]-o{ refresh_tokens
 credentials ||-[thickness=2]-o{ reset_tokens
