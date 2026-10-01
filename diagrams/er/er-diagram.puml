@@ -73,17 +73,24 @@ package "БД Пользователей" {
     --
     house_id : uuid <<ext: Конфигурация дома>>
     * name : string
-    * is_system : bool
+    * is_predefined : bool
+    * all_zones : bool
   }
   entity "permissions\nПраво" as permissions {
     * id : uuid <<PK>>
     --
     * code : string <<unique>>
     * name : string
+    * scope : enum (приборы, система)
   }
   entity "role_permissions\nРоль — право" as role_permissions {
-    * role_id : uuid <<PK, FK>>
-    * permission_id : uuid <<PK, FK>>
+    * id : uuid <<PK>>
+    --
+    * role_id : uuid <<FK>>
+    * permission_id : uuid <<FK>>
+    zone_id : uuid <<ext: Конфигурация дома>>
+    device_category_id : uuid <<ext: Интеграция приборов>>
+    * is_zone_deleted : bool
   }
   entity "house_memberships\nНазначение роли" as memberships {
     * id : uuid <<PK>>
@@ -93,19 +100,12 @@ package "БД Пользователей" {
     * role_id : uuid <<FK>>
     * assigned_at : datetime
   }
-  entity "zone_visibility\nВидимость зон" as zone_visibility {
-    * membership_id : uuid <<PK, FK>>
-    * zone_id : uuid <<PK>> <<ext: Конфигурация дома>>
-    --
-    * is_zone_deleted : bool
-  }
 }
 
 package "БД Конфигурации дома" {
   entity "houses\nДом" as houses {
     * id : uuid <<PK>>
     --
-    * owner_user_id : uuid <<ext: Пользователи>>
     * name : string
     address : string
     * created_at : datetime
@@ -186,10 +186,17 @@ package "БД Интеграции приборов" {
     * version : string
     settings : json
   }
+  entity "device_categories\nКатегория приборов" as device_categories {
+    * id : uuid <<PK>>
+    --
+    * code : string <<unique>>
+    * name : string
+  }
   entity "device_types\nТип прибора" as device_types {
     * id : uuid <<PK>>
     --
     * adapter_id : uuid <<FK>>
+    * category_id : uuid <<FK>>
     * name : string
     manufacturer : string
     model : string
@@ -374,7 +381,6 @@ users ||-[thickness=2]-o{ memberships
 roles ||-[thickness=2]-o{ memberships
 roles ||-[thickness=2]-o{ role_permissions
 permissions ||-[thickness=2]-o{ role_permissions
-memberships ||-[thickness=2]-o{ zone_visibility
 
 houses ||-[thickness=2]-|{ plans
 plans ||-[thickness=2]-o{ zones
@@ -387,6 +393,7 @@ devices ||-[thickness=2]-|| device_settings
 devices ||-[thickness=2]-o{ readings
 
 adapters ||-[thickness=2]-o{ device_types
+device_categories ||-[thickness=2]-o{ device_types
 device_types ||-[thickness=2]-o{ type_quantities
 device_types ||-[thickness=2]-o{ type_commands
 
@@ -402,10 +409,10 @@ notif_templates ||-[thickness=2]-o{ sent_notifications
 
 ' --------[thickness=2]-- Логические ссылки между БД (без FK) ----------
 users ||.[#888888].|| credentials
-users ||.[#888888].o{ houses : владелец
 houses |o.[#888888].o{ roles
 houses ||.[#888888].o{ memberships
-zones ||.[#888888].o{ zone_visibility
+zones |o.[#888888].o{ role_permissions
+device_categories |o.[#888888].o{ role_permissions
 
 devices ||.[#888888].|| placed_devices
 houses ||.[#888888].o{ devices
