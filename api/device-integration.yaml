@@ -72,12 +72,21 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+              example:
+                type: https://warmhouse.example/problems/not-found
+                title: Модель прибора не найдена
+                status: 404
+                detail: Модель 3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a отсутствует в каталоге
+                instance: /commands
+                correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
         '422':
           description: Модель прибора не поддерживает команду или параметры не соответствуют схеме
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     bearerAuth:
@@ -136,6 +145,13 @@ components:
           type: integer
         detail:
           type: string
+        instance:
+          type: string
+          description: Путь запроса, на котором возникла ошибка
+        correlationId:
+          type: string
+          format: uuid
+          description: X-Correlation-Id запроса — для поиска в журналах
   responses:
     BadRequest:
       description: Некорректный запрос
@@ -149,3 +165,18 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    InternalServerError:
+      description: |
+        Внутренняя ошибка сервиса (например, недоступна его БД или зависимый
+        сервис). Запрос можно повторить позже.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://warmhouse.example/problems/internal-error
+            title: Внутренняя ошибка сервиса
+            status: 500
+            detail: Не удалось выполнить запрос, повторите позже
+            instance: /commands
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
