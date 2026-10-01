@@ -524,24 +524,36 @@ OpenAPI 3.0 по файлу на сервис. Ссылка «Swagger UI» от�
 
 В гостиной стоят умный термостат `d-101` (категория `heating`, вид `actuator`),
 датчик температуры `d-103` (`heating`, `sensor`) и лампа `d-102` (`lighting`).
-Идентификаторы сокращены; полные примеры — в спецификациях.
+В тексте приборы и идентификаторы названы коротко, в запросах и событиях —
+настоящие UUID (те же, что в примерах спецификаций; их можно вставлять в Swagger UI):
+
+| Короткое имя | Что это | UUID |
+|---|---|---|
+| `c-777` | correlationId выполнения сценария | `0f1e2d3c-4b5a-4968-8776-655443322110` |
+| `{дом}` | дом | `7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f` |
+| `{гостиная}` | зона | `2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d` |
+| `d-101` | умный термостат | `9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d` |
+| `d-103` | датчик температуры | `5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f` |
+| `k-555` | команда в журнале Телематики | `4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8` |
+| `{Danfoss Ally}` | модель термостата | `3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a` |
+| `{Zigbee-адаптер}` | адаптер протокола | `8d9e0f1a-2b3c-4d4e-5f6a-7b8c9d0e1f2a` |
 
 *Шаг 1. Автоматизация → Отопление: задать режим (№ 1, синхронно).*
 Выполнение сценария создаёт `correlationId = c-777` и передаёт его в заголовке.
 
 ```http
-PUT http://heating-service/zones/{гостиная}/temperature-mode
+PUT http://heating-service/zones/2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d/temperature-mode
 Authorization: Bearer <JWT>
-X-Correlation-Id: c-777
+X-Correlation-Id: 0f1e2d3c-4b5a-4968-8776-655443322110
 Content-Type: application/json
 
-{ "houseId": "{дом}", "targetTemperature": 22.0, "mode": "comfort" }
+{ "houseId": "7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f", "targetTemperature": 22.0, "mode": "comfort" }
 ```
 ```http
 HTTP/1.1 200 OK
-X-Correlation-Id: c-777
+X-Correlation-Id: 0f1e2d3c-4b5a-4968-8776-655443322110
 
-{ "id": "{режим}", "zoneId": "{гостиная}", "houseId": "{дом}",
+{ "id": "6e7f8a9b-0c1d-4e2f-3a4b-5c6d7e8f9a0b", "zoneId": "2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d", "houseId": "7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f",
   "targetTemperature": 22.0, "mode": "comfort", "isSuspended": false,
   "updatedAt": "2026-10-01T18:30:00Z" }
 ```
@@ -550,16 +562,16 @@ X-Correlation-Id: c-777
 *Шаг 2. Отопление → Конфигурация дома: приборы отопления зоны (№ 2, синхронно).*
 
 ```http
-GET http://house-configuration-service/zones/{гостиная}/devices?category=heating
-X-Correlation-Id: c-777
+GET http://house-configuration-service/zones/2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d/devices?category=heating
+X-Correlation-Id: 0f1e2d3c-4b5a-4968-8776-655443322110
 ```
 ```http
 HTTP/1.1 200 OK
 
-{ "zoneId": "{гостиная}",
+{ "zoneId": "2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d",
   "devices": [
-    { "deviceId": "d-101", "category": "heating", "kind": "actuator", ... },
-    { "deviceId": "d-103", "category": "heating", "kind": "sensor", ... } ] }
+    { "deviceId": "9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d", "category": "heating", "kind": "actuator", ... },
+    { "deviceId": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f", "category": "heating", "kind": "sensor", ... } ] }
 ```
 Отопление разделяет ответ по `kind`: термостату `d-101` передаёт цель, по датчику
 `d-103` следит за прогревом. Лампа в выборку не попадает. Категорию и вид
@@ -569,8 +581,8 @@ HTTP/1.1 200 OK
 Команда — из единой модели команд категории, модель термостата Отоплению не важна.
 
 ```http
-POST http://telematics-service/devices/d-101/commands
-X-Correlation-Id: c-777
+POST http://telematics-service/devices/9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d/commands
+X-Correlation-Id: 0f1e2d3c-4b5a-4968-8776-655443322110
 Content-Type: application/json
 
 { "initiator": "heating", "commandCode": "set_target_temperature",
@@ -579,7 +591,7 @@ Content-Type: application/json
 ```http
 HTTP/1.1 202 Accepted
 
-{ "commandId": "k-555", "deviceId": "d-101", "correlationId": "c-777",
+{ "commandId": "4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8", "deviceId": "9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d", "correlationId": "0f1e2d3c-4b5a-4968-8776-655443322110",
   "status": "sent", "sentAt": "2026-10-01T18:30:00Z" }
 ```
 Телематика записывает команду в журнал: `k-555, d-101, heating, c-777, sent`.
@@ -589,17 +601,17 @@ HTTP/1.1 202 Accepted
 
 ```http
 POST http://device-integration-service/commands
-X-Correlation-Id: c-777
+X-Correlation-Id: 0f1e2d3c-4b5a-4968-8776-655443322110
 Content-Type: application/json
 
-{ "commandId": "k-555", "deviceId": "d-101", "deviceModelId": "{Danfoss Ally}",
+{ "commandId": "4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8", "deviceId": "9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d", "deviceModelId": "3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a",
   "address": "zigbee:0x00124b0018e2a1f3",
   "commandCode": "set_target_temperature", "parameters": { "value": 22.0 } }
 ```
 ```http
 HTTP/1.1 202 Accepted
 
-{ "commandId": "k-555", "adapterId": "{Zigbee-адаптер}", "acceptedAt": "2026-10-01T18:30:01Z" }
+{ "commandId": "4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8", "adapterId": "8d9e0f1a-2b3c-4d4e-5f6a-7b8c9d0e1f2a", "acceptedAt": "2026-10-01T18:30:01Z" }
 ```
 Интеграция по модели выбирает адаптер, сопоставляет `set_target_temperature`
 с командой модели и отправляет её термостату по Zigbee. Дальше термостат держит 22 °C сам.
@@ -608,8 +620,8 @@ HTTP/1.1 202 Accepted
 
 | Канал | Кто → кому | Сообщение |
 |---|---|---|
-| `adapter.command-result` | Интеграция → Телематика | `{ "commandId": "k-555", "status": "succeeded", "correlationId": "c-777" }` |
-| `device.command-result` | Телематика → Отопление (и др.) | `{ "commandId": "k-555", "initiator": "heating", "status": "succeeded", "correlationId": "c-777" }` |
+| `adapter.command-result` | Интеграция → Телематика | `{ "commandId": "4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8", "status": "succeeded", "correlationId": "0f1e2d3c-4b5a-4968-8776-655443322110" }` |
+| `device.command-result` | Телематика → Отопление (и др.) | `{ "commandId": "4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8", "initiator": "heating", "status": "succeeded", "correlationId": "0f1e2d3c-4b5a-4968-8776-655443322110" }` |
 
 Телематика обновляет журнал (`k-555 → succeeded`). Если прибор не ответил за заданное
 время, Телематика сама публикует результат со статусом `timeout`. Отопление отбирает
@@ -619,7 +631,7 @@ HTTP/1.1 202 Accepted
 *Шаг 6. Отопление → Автоматизация: итог действия (событие `temperature-mode.result`).*
 
 ```json
-{ "correlationId": "c-777", "zoneId": "{гостиная}", "targetTemperature": 22.0,
+{ "correlationId": "0f1e2d3c-4b5a-4968-8776-655443322110", "zoneId": "2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d", "targetTemperature": 22.0,
   "mode": "comfort", "result": "applied" }
 ```
 При ошибке или таймауте — `"result": "not_applied"` и список `failedDevices`.

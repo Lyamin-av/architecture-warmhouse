@@ -37,6 +37,7 @@ paths:
           schema:
             type: string
             format: uuid
+            example: 0f1e2d3c-4b5a-4968-8776-655443322110
       requestBody:
         required: true
         content:
