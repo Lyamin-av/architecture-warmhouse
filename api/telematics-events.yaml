@@ -1,0 +1,233 @@
+asyncapi: 2.6.0
+info:
+  title: Телематика — события (Telematics Service Events)
+  version: 1.0.0
+  description: |
+    События, которые публикует микросервис «Телематика» в брокер RabbitMQ.
+    Описаны события цепочки «установить температуру в зоне»:
+    новый прибор, показания, результат команды.
+
+    Издатель не знает подписчиков: у каждого подписчика своя очередь,
+    привязанная к exchange `telematics.events` по routing key.
+    Повторные попытки и очередь недоставленных — на стороне подписчика.
+defaultContentType: application/json
+servers:
+  rabbitmq:
+    url: amqp://rabbitmq:5672
+    protocol: amqp
+    description: Брокер сообщений системы
+channels:
+  device.added:
+    description: |
+      Прибор сопряжён. Несёт модель, категорию и вид прибора — подписчики
+      хранят их копией (event-carried state transfer) и не запрашивают
+      «Телематику» и «Интеграцию приборов» во время работы.
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: telematics.events
+          type: topic
+          durable: true
+    subscribe:
+      operationId: onDeviceAdded
+      summary: Подписчики — Конфигурация дома
+      message:
+        $ref: '#/components/messages/DeviceAdded'
+  device.readings:
+    description: |
+      Показание прибора — по плановому или внеочередному опросу.
+      Для внеочередного опроса несёт `correlationId` запроса.
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: telematics.events
+          type: topic
+          durable: true
+    subscribe:
+      operationId: onDeviceReading
+      summary: Подписчики — Отопление, Охрана, Автоматизация
+      message:
+        $ref: '#/components/messages/DeviceReading'
+  device.command-result:
+    description: |
+      Итог команды прибору: выполнена, ошибка или таймаут (ответа от прибора
+      не было за заданное время). Подписчики отбирают свои команды по `initiator`
+      и сопоставляют по `commandId` / `correlationId`.
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: telematics.events
+          type: topic
+          durable: true
+    subscribe:
+      operationId: onCommandResult
+      summary: Подписчики — Отопление, Освещение, Ворота, Видеонаблюдение, Уведомления
+      message:
+        $ref: '#/components/messages/CommandResult'
+components:
+  messages:
+    DeviceAdded:
+      name: DeviceAdded
+      title: Новый прибор
+      correlationId:
+        $ref: '#/components/correlationIds/ByPayload'
+      payload:
+        $ref: '#/components/schemas/DeviceAdded'
+      examples:
+        - payload:
+            eventId: 6b1f0c2e-3d4a-4b5c-8d9e-0f1a2b3c4d5e
+            occurredAt: '2026-10-01T18:00:00Z'
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+            deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
+            houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+            modelId: 3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a
+            categoryCode: heating
+            kind: actuator
+            pairedAt: '2026-10-01T18:00:00Z'
+    DeviceReading:
+      name: DeviceReading
+      title: Показание прибора
+      correlationId:
+        $ref: '#/components/correlationIds/ByPayload'
+      payload:
+        $ref: '#/components/schemas/DeviceReading'
+      examples:
+        - payload:
+            eventId: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+            occurredAt: '2026-10-01T18:30:05Z'
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+            deviceId: 5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f
+            houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+            quantityCode: temperature
+            value: 19.5
+            unit: '°C'
+            measuredAt: '2026-10-01T18:30:04Z'
+            pollKind: on_demand
+    CommandResult:
+      name: CommandResult
+      title: Результат команды
+      correlationId:
+        $ref: '#/components/correlationIds/ByPayload'
+      payload:
+        $ref: '#/components/schemas/CommandResult'
+      examples:
+        - payload:
+            eventId: 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e
+            occurredAt: '2026-10-01T18:30:07Z'
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+            commandId: 4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8
+            deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
+            houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+            initiator: heating
+            commandCode: set_target_temperature
+            status: succeeded
+            completedAt: '2026-10-01T18:30:07Z'
+  correlationIds:
+    ByPayload:
+      description: Сквозной идентификатор цепочки вызовов и событий
+      location: $message.payload#/correlationId
+  schemas:
+    EventBase:
+      type: object
+      required: [eventId, occurredAt]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Идентификатор события (для идемпотентной обработки у подписчика)
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+          description: Сквозной идентификатор цепочки (X-Correlation-Id исходного вызова)
+    DeviceKind:
+      type: string
+      enum: [sensor, actuator, hub]
+      description: Вид прибора — датчик, исполнительное устройство, модуль управления
+    DeviceAdded:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required: [deviceId, houseId, modelId, categoryCode, kind, pairedAt]
+          properties:
+            deviceId:
+              type: string
+              format: uuid
+              description: Идентификатор, выданный при сопряжении
+            houseId:
+              type: string
+              format: uuid
+            modelId:
+              type: string
+              format: uuid
+              description: Модель прибора из каталога «Интеграции приборов»
+            categoryCode:
+              type: string
+              description: Код категории (отопление, свет, ворота, камеры…)
+            kind:
+              $ref: '#/components/schemas/DeviceKind'
+            pairedAt:
+              type: string
+              format: date-time
+    DeviceReading:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required: [deviceId, houseId, quantityCode, value, unit, measuredAt, pollKind]
+          properties:
+            deviceId:
+              type: string
+              format: uuid
+            houseId:
+              type: string
+              format: uuid
+            quantityCode:
+              type: string
+              description: Измеряемая величина из каталога (например, temperature)
+            value:
+              type: number
+            unit:
+              type: string
+            measuredAt:
+              type: string
+              format: date-time
+            pollKind:
+              type: string
+              enum: [scheduled, on_demand]
+              description: Плановый или внеочередной опрос
+    CommandResult:
+      allOf:
+        - $ref: '#/components/schemas/EventBase'
+        - type: object
+          required: [commandId, deviceId, houseId, initiator, commandCode, status, completedAt]
+          properties:
+            commandId:
+              type: string
+              format: uuid
+              description: Идентификатор из ответа 202 на POST /devices/{deviceId}/commands
+            deviceId:
+              type: string
+              format: uuid
+            houseId:
+              type: string
+              format: uuid
+            initiator:
+              type: string
+              enum: [heating, lighting, gate, video-control]
+              description: Сервис, отдавший команду
+            commandCode:
+              type: string
+            status:
+              type: string
+              enum: [succeeded, failed, timeout]
+            error:
+              type: string
+              description: Причина ошибки (для failed и timeout)
+            completedAt:
+              type: string
+              format: date-time

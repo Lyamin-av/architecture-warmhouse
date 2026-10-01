@@ -1,0 +1,88 @@
+asyncapi: 2.6.0
+info:
+  title: Интеграция приборов — события (Device Integration Service Events)
+  version: 1.0.0
+  description: |
+    События, которые публикует микросервис «Интеграция приборов» в брокер RabbitMQ.
+
+    Внутреннее событие цепочки команд: адаптер получил ответ прибора на команду.
+    Подписчик — только «Телематика»: она обновляет журнал команд и публикует
+    общее событие «результат команды». Остальные сервисы об «Интеграции приборов»
+    не знают.
+defaultContentType: application/json
+servers:
+  rabbitmq:
+    url: amqp://rabbitmq:5672
+    protocol: amqp
+    description: Брокер сообщений системы
+channels:
+  adapter.command-result:
+    description: Ответ прибора на команду, переданную через адаптер (POST /commands)
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: device-integration.events
+          type: topic
+          durable: true
+    subscribe:
+      operationId: onAdapterCommandResult
+      summary: Подписчик — Телематика
+      message:
+        $ref: '#/components/messages/AdapterCommandResult'
+components:
+  messages:
+    AdapterCommandResult:
+      name: AdapterCommandResult
+      title: Результат команды от адаптера
+      correlationId:
+        description: Сквозной идентификатор цепочки вызовов и событий
+        location: $message.payload#/correlationId
+      payload:
+        $ref: '#/components/schemas/AdapterCommandResult'
+      examples:
+        - payload:
+            eventId: 3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e7f
+            occurredAt: '2026-10-01T18:30:06Z'
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+            commandId: 4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8
+            deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
+            adapterId: 8d9e0f1a-2b3c-4d4e-5f6a-7b8c9d0e1f2a
+            status: succeeded
+            completedAt: '2026-10-01T18:30:06Z'
+  schemas:
+    AdapterCommandResult:
+      type: object
+      required: [eventId, occurredAt, commandId, deviceId, adapterId, status, completedAt]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Идентификатор события (для идемпотентной обработки)
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+        commandId:
+          type: string
+          format: uuid
+          description: Идентификатор команды из журнала «Телематики» (передан в POST /commands)
+        deviceId:
+          type: string
+          format: uuid
+        adapterId:
+          type: string
+          format: uuid
+          description: Адаптер протокола, выбранный по модели прибора
+        status:
+          type: string
+          enum: [succeeded, failed]
+          description: Выполнена или ошибка; таймаут фиксирует «Телематика»
+        error:
+          type: string
+          description: Ответ прибора или адаптера при ошибке
+        completedAt:
+          type: string
+          format: date-time
