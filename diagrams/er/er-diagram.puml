@@ -75,7 +75,7 @@ package "БД Пользователей" {
     * name : string
     * is_system : bool
   }
-  entity "permissions\nДействие (право)" as permissions {
+  entity "permissions\nПраво" as permissions {
     * id : uuid <<PK>>
     --
     * code : string <<unique>>
