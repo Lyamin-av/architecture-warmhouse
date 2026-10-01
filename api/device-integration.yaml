@@ -3,11 +3,11 @@ info:
   title: Интеграция приборов (Device Integration Service)
   version: 1.0.0
   description: |
-    API микросервиса «Интеграция приборов»: каталог типов приборов и адаптеры
+    API микросервиса «Интеграция приборов»: каталог моделей приборов и адаптеры
     протоколов (anti-corruption layer между протоколами партнёров и единой моделью).
 
     В этой спецификации описан один асинхронный эндпоинт — передача команды прибору.
-    Адаптер выбирается по типу прибора внутри сервиса.
+    Адаптер выбирается по модели прибора внутри сервиса.
     Результат от прибора публикуется в брокер внутренним событием
     «результат команды от адаптера» (с `commandId`); на него подписана только «Телематика».
 
@@ -26,7 +26,7 @@ paths:
       operationId: dispatchCommand
       summary: Передать команду прибору через адаптер протокола
       description: |
-        По `deviceTypeId` находит тип прибора и его адаптер, проверяет команду
+        По `deviceModelId` находит модель прибора и его адаптер, проверяет команду
         и параметры по каталогу, переводит команду в протокол партнёра и отправляет прибору.
         Ответ не ждёт выполнения на приборе.
       parameters:
@@ -46,7 +46,7 @@ paths:
             example:
               commandId: 4e5f6a7b-8c9d-4e0f-a1b2-c3d4e5f6a7b8
               deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
-              deviceTypeId: 3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a
+              deviceModelId: 3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a
               address: 'zigbee:0x00124b0018e2a1f3'
               commandCode: set_power
               parameters:
@@ -63,13 +63,13 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Тип прибора не найден в каталоге
+          description: Модель прибора не найдена в каталоге
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
         '422':
-          description: Тип прибора не поддерживает команду или параметры не соответствуют схеме
+          description: Модель прибора не поддерживает команду или параметры не соответствуют схеме
           content:
             application/problem+json:
               schema:
@@ -83,7 +83,7 @@ components:
   schemas:
     AdapterCommandRequest:
       type: object
-      required: [commandId, deviceId, deviceTypeId, address, commandCode]
+      required: [commandId, deviceId, deviceModelId, address, commandCode]
       properties:
         commandId:
           type: string
@@ -92,16 +92,16 @@ components:
         deviceId:
           type: string
           format: uuid
-        deviceTypeId:
+        deviceModelId:
           type: string
           format: uuid
-          description: Тип прибора из каталога; по нему выбирается адаптер
+          description: Модель прибора из каталога; по нему выбирается адаптер
         address:
           type: string
           description: Адрес прибора в протоколе партнёра (из настроек прибора)
         commandCode:
           type: string
-          description: Код команды из каталога («Команда типа»)
+          description: Код команды из каталога («Команда модели»)
         parameters:
           type: object
           additionalProperties: true
