@@ -16,8 +16,8 @@ System_Boundary(Warmhouse, "Умный дом") {
     Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
     ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
     ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
-    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний")
-    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний, журнал команд")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы (с категорией и видом)")
 }
 
 System_Ext(cameras, "Камеры", "Камеры видеонаблюдения партнёров")
@@ -32,7 +32,7 @@ Rel(Security, VideoControl, "Команды камерам (слежение), �
 Rel(VideoControl, Telematics, "Команды камерам", "HTTPS")
 Rel(Security, GateControl, "Открытие ворот для разрешённого номера", "HTTPS")
 Rel(GateControl, Telematics, "Команды", "HTTPS")
-Rel(Security, Broker, "Публикует: тревога, постановка, снятие", "AMQP")
+Rel(Security, Broker, "Публикует: тревога, постановка, постановка не выполнена, снятие", "AMQP")
 
 note right of Broker
   Подписчики на события охраны:
@@ -48,7 +48,9 @@ Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
 Rel(Broker, Security, "Доставляет: показания и состояние приборов, зона удалена, зона восстановлена", "AMQP")
-Rel(Telematics, Broker, "Публикует: показания, состояние приборов", "AMQP")
+Rel(Telematics, Broker, "Публикует: показания, состояние приборов, результат команды", "AMQP")
+Rel(Broker, VideoControl, "Доставляет: результат команды", "AMQP")
+Rel(Broker, GateControl, "Доставляет: результат команды", "AMQP")
 
 SHOW_LEGEND()
 @enduml

@@ -41,7 +41,24 @@ package "Входы" {
     +HouseId: Guid
     +OccurredAt: DateTime
     +Type: SecurityEventType
+    +CorrelationId: Guid?
   }
+  class ActionCompleted {
+    +HouseId: Guid
+    +OccurredAt: DateTime
+    +CorrelationId: Guid
+    +Source: ActionSource
+    +Succeeded: bool
+    +Error: string?
+  }
+  enum ActionSource {
+    Heating
+    Lighting
+    Gate
+    Camera
+  }
+  IDomainEvent <|.. ActionCompleted
+  ActionCompleted ..> ActionSource
   IDomainEvent <|.. DeviceReadingReceived
   IDomainEvent <|.. DeviceStateChanged
   IDomainEvent <|.. SecurityEventOccurred
@@ -52,7 +69,8 @@ package "Выполнение" {
     -_repository: IScenarioRepository
     -_stateStore: IHouseStateStore
     -_publisher: IScenarioEventPublisher
-    +ScenarioExecutor(repository: IScenarioRepository, stateStore: IHouseStateStore, publisher: IScenarioEventPublisher)
+    -_runs: IScenarioRunStore
+    +ScenarioExecutor(repository: IScenarioRepository, stateStore: IHouseStateStore, publisher: IScenarioEventPublisher, runs: IScenarioRunStore)
     +HandleAsync(e: IDomainEvent): Task
     +OnTimeAsync(now: DateTime): Task
     +RunManuallyAsync(scenarioId: Guid): Task<bool>
@@ -89,6 +107,24 @@ package "Выполнение" {
     +GetReading(deviceId: Guid): decimal?
     +GetDeviceState(deviceId: Guid): DeviceState?
   }
+  interface IScenarioRunStore {
+    +StartAsync(s: Scenario): Task<ScenarioRun>
+    +CompleteActionAsync(e: ActionCompleted): Task
+  }
+  class ScenarioRun {
+    +CorrelationId: Guid
+    +ScenarioId: Guid
+    +StartedAt: DateTime
+    +PendingActions: int
+    +Status: RunStatus
+  }
+  enum RunStatus {
+    Running
+    Succeeded
+    Failed
+  }
+  IScenarioRunStore ..> ScenarioRun : возвращает
+  ScenarioRun ..> RunStatus
   interface IScenarioEventPublisher {
     +PublishTriggeredAsync(e: ScenarioTriggered): Task
   }
@@ -178,36 +214,38 @@ package "Модель сценария" {
   }
 
   interface IAction {
-    +ExecuteAsync(): Task
+    +ExecuteAsync(correlationId: Guid): Task
   }
   class HeatingAction {
     +ZoneId: Guid
-    +Mode: string
+    +HouseId: Guid
+    +TargetTemperature: decimal
+    +Mode: HeatingMode
     -_api: IHeatingApi
-    +ExecuteAsync(): Task
+    +ExecuteAsync(correlationId: Guid): Task
   }
   class LightingAction {
     +DeviceId: Guid
     +TurnOn: bool
     -_api: ILightingApi
-    +ExecuteAsync(): Task
+    +ExecuteAsync(correlationId: Guid): Task
   }
   class GateAction {
     +DeviceId: Guid
     +Open: bool
     -_api: IGateApi
-    +ExecuteAsync(): Task
+    +ExecuteAsync(correlationId: Guid): Task
   }
   class CameraAction {
     +CameraId: Guid
     +Command: string
     -_api: IVideoApi
-    +ExecuteAsync(): Task
+    +ExecuteAsync(correlationId: Guid): Task
   }
   class ArmSecurityAction {
     +HouseId: Guid
     -_api: ISecurityApi
-    +ExecuteAsync(): Task
+    +ExecuteAsync(correlationId: Guid): Task
   }
 
   ITrigger <|.. DeviceReadingTrigger
@@ -235,20 +273,26 @@ package "Модель сценария" {
 
 package "Вызовы контекстов категорий приборов (HTTPS)" {
   interface IHeatingApi {
-    +SetModeAsync(zoneId: Guid, mode: string): Task
+    +SetModeAsync(zoneId: Guid, houseId: Guid, targetTemperature: decimal, mode: HeatingMode, correlationId: Guid): Task
   }
   interface ILightingApi {
-    +SwitchAsync(deviceId: Guid, turnOn: bool): Task
+    +SwitchAsync(deviceId: Guid, turnOn: bool, correlationId: Guid): Task
   }
   interface IGateApi {
-    +SetStateAsync(deviceId: Guid, open: bool): Task
+    +SetStateAsync(deviceId: Guid, open: bool, correlationId: Guid): Task
   }
   interface IVideoApi {
-    +SendCommandAsync(cameraId: Guid, command: string): Task
+    +SendCommandAsync(cameraId: Guid, command: string, correlationId: Guid): Task
   }
   interface ISecurityApi {
-    +ArmAsync(houseId: Guid): Task
+    +ArmAsync(houseId: Guid, correlationId: Guid): Task
   }
+  enum HeatingMode {
+    Comfort
+    Eco
+    Off
+  }
+  IHeatingApi ..> HeatingMode
 }
 
 AutomationEventSubscriber --> ScenarioExecutor : HandleAsync на каждое событие
@@ -259,6 +303,8 @@ ScenarioExecutor ..> IDomainEvent : принимает
 ScenarioExecutor --> IScenarioRepository
 ScenarioExecutor --> IHouseStateStore : обновляет и читает состояние
 ScenarioExecutor --> IScenarioEventPublisher
+ScenarioExecutor --> IScenarioRunStore : выполнение = correlationId, итоги действий
+HeatingAction ..> HeatingMode
 ScenarioExecutor ..> TriggerContext : создаёт
 ScenarioExecutor ..> Scenario : проверяет и запускает
 IScenarioRepository ..> Scenario : возвращает
@@ -279,6 +325,11 @@ note bottom of Scenario
   «температура выше 22 °C И (дом на охране ИЛИ с 23:00 до 7:00)».
   Все три входа идут одним путём: IsTriggeredBy → ConditionsMet → RunAsync.
   Сценарий запускается, только если включён и не помечен неработающим.
+  RunAsync создаёт выполнение (ScenarioRun) с correlationId и передаёт его
+  в каждое действие; сервисы возвращают итог событием (ActionCompleted,
+  SecurityEventOccurred) с тем же correlationId — так выполнение узнаёт,
+  все ли действия прошли успешно. IHeatingApi.SetModeAsync — клиент
+  PUT /zones/{zoneId}/temperature-mode (api/heating.yaml).
 end note
 
 @enduml
