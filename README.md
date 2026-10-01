@@ -510,14 +510,15 @@ ER-диаграмма To-Be системы на логическом уровн�
 
 Спроектирована одна сквозная цепочка — «установить температуру в зоне»
 (MVP, отопление). Четыре эндпоинта, четыре микросервиса, спецификации
-OpenAPI 3.0 по файлу на сервис (открываются в [Swagger Editor](https://editor.swagger.io/)):
+OpenAPI 3.0 по файлу на сервис. Ссылка «Swagger UI» открывает интерактивную
+документацию прямо из репозитория (для правки — [Swagger Editor](https://editor.swagger.io/)):
 
 | # | Сервис | Эндпоинт | Кто вызывает | Ответ | Спецификация |
 |---|---|---|---|---|---|
-| 1 | Управление отоплением | `PUT /zones/{zoneId}/temperature-mode` — задать режим зоны (температура + режим) | API Gateway, Автоматизация | `200` режим сохранён | [heating.yaml](api/heating.yaml) |
-| 2 | Конфигурация дома | `GET /zones/{zoneId}/devices?category=&kind=` — приборы зоны | Отопление | `200` список приборов | [house-configuration.yaml](api/house-configuration.yaml) |
-| 3 | Телематика | `POST /devices/{deviceId}/commands` — команда прибору | Отопление (и Освещение, Ворота, Видеонаблюдение) | `202` команда принята | [telematics.yaml](api/telematics.yaml) |
-| 4 | Интеграция приборов | `POST /commands` — команда через адаптер протокола | Телематика | `202` передано адаптеру | [device-integration.yaml](api/device-integration.yaml) |
+| 1 | Управление отоплением | `PUT /zones/{zoneId}/temperature-mode` — задать режим зоны (температура + режим) | API Gateway, Автоматизация | `200` режим сохранён | [heating.yaml](api/heating.yaml) · [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/heating.yaml) |
+| 2 | Конфигурация дома | `GET /zones/{zoneId}/devices?category=&kind=` — приборы зоны | Отопление | `200` список приборов | [house-configuration.yaml](api/house-configuration.yaml) · [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/house-configuration.yaml) |
+| 3 | Телематика | `POST /devices/{deviceId}/commands` — команда прибору | Отопление (и Освещение, Ворота, Видеонаблюдение) | `202` команда принята | [telematics.yaml](api/telematics.yaml) · [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/telematics.yaml) |
+| 4 | Интеграция приборов | `POST /commands` — команда через адаптер протокола | Телематика | `202` передано адаптеру | [device-integration.yaml](api/device-integration.yaml) · [Swagger UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/device-integration.yaml) |
 
 **Пример использования API: сценарий «Вечер» ставит в гостиной 22 °C**
 
@@ -632,16 +633,16 @@ HTTP/1.1 202 Accepted
 `X-Correlation-Id` / `correlationId` связывает все вызовы и события в одну цепочку.
 
 **События цепочки** — AsyncAPI 2.6, по файлу на публикующий сервис
-(открываются в [AsyncAPI Studio](https://studio.asyncapi.com/)). Команды асинхронные,
+(ссылка «AsyncAPI Studio» открывает интерактивную документацию). Команды асинхронные,
 поэтому результат вызовов № 3–4 приходит этими событиями:
 
 | Событие (канал) | Публикует | Подписчики | Спецификация |
 |---|---|---|---|
-| `device.added` — новый прибор с моделью, категорией и видом | Телематика | Конфигурация дома | [telematics-events.yaml](api/telematics-events.yaml) |
-| `device.readings` — показания (плановый и внеочередной опрос) | Телематика | Отопление, Охрана, Автоматизация | [telematics-events.yaml](api/telematics-events.yaml) |
-| `device.command-result` — результат команды (выполнена / ошибка / таймаут) | Телематика | Отопление, Освещение, Ворота, Видеонаблюдение, Уведомления | [telematics-events.yaml](api/telematics-events.yaml) |
-| `adapter.command-result` — ответ прибора через адаптер | Интеграция приборов | Телематика | [device-integration-events.yaml](api/device-integration-events.yaml) |
-| `temperature-mode.result` — режим применён / не применён | Отопление | Автоматизация | [heating-events.yaml](api/heating-events.yaml) |
+| `device.added` — новый прибор с моделью, категорией и видом | Телематика | Конфигурация дома | [telematics-events.yaml](api/telematics-events.yaml) · [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/telematics-events.yaml) |
+| `device.readings` — показания (плановый и внеочередной опрос) | Телематика | Отопление, Охрана, Автоматизация | [telematics-events.yaml](api/telematics-events.yaml) · [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/telematics-events.yaml) |
+| `device.command-result` — результат команды (выполнена / ошибка / таймаут) | Телематика | Отопление, Освещение, Ворота, Видеонаблюдение, Уведомления | [telematics-events.yaml](api/telematics-events.yaml) · [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/telematics-events.yaml) |
+| `adapter.command-result` — ответ прибора через адаптер | Интеграция приборов | Телематика | [device-integration-events.yaml](api/device-integration-events.yaml) · [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/device-integration-events.yaml) |
+| `temperature-mode.result` — режим применён / не применён | Отопление | Автоматизация | [heating-events.yaml](api/heating-events.yaml) · [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Lyamin-av/architecture-warmhouse/warmhouse/api/heating-events.yaml) |
 
 **Контракты:**
 - команды асинхронные: ответ `202`, результат приходит событием
