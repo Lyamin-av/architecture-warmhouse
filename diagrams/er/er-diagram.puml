@@ -142,7 +142,7 @@ package "БД Телематики" {
     * id : uuid <<PK>>
     --
     * house_id : uuid <<ext: Конфигурация дома>>
-    * device_type_id : uuid <<ext: Интеграция приборов>>
+    * device_model_id : uuid <<ext: Интеграция приборов>>
     hub_id : uuid <<FK>>
     * serial_number : string
     * name : string
@@ -186,7 +186,7 @@ package "БД Интеграции приборов" {
     * code : string <<unique>>
     * name : string
   }
-  entity "device_types\nТип прибора" as device_types {
+  entity "device_models\nМодель прибора" as device_models {
     * id : uuid <<PK>>
     --
     * adapter_id : uuid <<FK>>
@@ -196,19 +196,19 @@ package "БД Интеграции приборов" {
     model : string
     * is_universal : bool
   }
-  entity "type_quantities\nИзмеряемая величина" as type_quantities {
+  entity "model_quantities\nИзмеряемая величина" as model_quantities {
     * id : uuid <<PK>>
     --
-    * device_type_id : uuid <<FK>>
+    * device_model_id : uuid <<FK>>
     * code : string
     * name : string
     * unit : string
     * value_type : enum (число, логическое, текст)
   }
-  entity "type_commands\nКоманда типа" as type_commands {
+  entity "model_commands\nКоманда модели" as model_commands {
     * id : uuid <<PK>>
     --
-    * device_type_id : uuid <<FK>>
+    * device_model_id : uuid <<FK>>
     * code : string
     * name : string
     parameters_schema : json
@@ -394,10 +394,10 @@ devices |o-[thickness=2]-o{ devices : хаб
 devices ||-[thickness=2]-|| device_settings
 devices ||-[thickness=2]-o{ readings
 
-adapters ||-[thickness=2]-o{ device_types
-device_categories ||-[thickness=2]-o{ device_types
-device_types ||-[thickness=2]-o{ type_quantities
-device_types ||-[thickness=2]-o{ type_commands
+adapters ||-[thickness=2]-o{ device_models
+device_categories ||-[thickness=2]-o{ device_models
+device_models ||-[thickness=2]-o{ model_quantities
+device_models ||-[thickness=2]-o{ model_commands
 
 security_states ||-[thickness=2]-o{ alarms
 
@@ -418,8 +418,8 @@ device_categories |o.[#888888].o{ role_device_perms
 
 devices ||.[#888888].|| placed_devices
 houses ||.[#888888].o{ devices
-device_types ||.[#888888].o{ devices
-type_quantities ||.[#888888].o{ readings
+device_models ||.[#888888].o{ devices
+model_quantities ||.[#888888].o{ readings
 
 zones ||.[#888888].o| regimes
 

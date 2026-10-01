@@ -42,7 +42,7 @@ package "Домен: Умный дом" as DOMAIN #FFFFFF {
   }
   package "Поддомен: Интеграция приборов [core]" as SD_INT #E6EEFB {
     rectangle "Адаптеры протоколов\n[ACL]" as ADAPT
-    rectangle "Каталог типов\nприборов" as CATALOG
+    rectangle "Каталог моделей\nприборов" as CATALOG
   }
   package "Поддомен: Автоматизация [core]" as SD_AUTO #E6EEFB {
     rectangle "Конструктор сценариев" as SCEN
@@ -73,7 +73,7 @@ LIGHT "D" --> "U" DEV : команды
 GATE "D" --> "U" DEV : команды
 CAM_CTRL "D" --> "U" DEV : команды
 DEV "D" --> "U" ADAPT : команды
-DEV "D" --> "U" CATALOG : описание типа
+DEV "D" --> "U" CATALOG : описание модели
 ADAPT --> EXT_DEV : протоколы партнёров
 
 ' --- данные с приборов ---

@@ -27,7 +27,7 @@ paths:
       operationId: sendDeviceCommand
       summary: Отправить команду прибору
       description: |
-        Проверяет, что прибор существует и его тип принимает команду, записывает
+        Проверяет, что прибор существует и его модель принимает команду, записывает
         команду в журнал команд со статусом `sent` и передаёт её в «Интеграцию приборов».
         Ответ не ждёт выполнения на приборе.
       parameters:
@@ -70,7 +70,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
         '422':
-          description: Тип прибора не поддерживает команду
+          description: Модель прибора не поддерживает команду
           content:
             application/problem+json:
               schema:
@@ -142,11 +142,11 @@ components:
           $ref: '#/components/schemas/Initiator'
         commandCode:
           type: string
-          description: Код команды из каталога типов приборов («Команда типа»)
+          description: Код команды из каталога моделей приборов («Команда модели»)
         parameters:
           type: object
           additionalProperties: true
-          description: Параметры команды по схеме из каталога типов приборов
+          description: Параметры команды по схеме из каталога моделей приборов
     CommandStatus:
       type: string
       enum: [sent, succeeded, failed, timeout]

@@ -233,7 +233,7 @@ package "Модель сценария" {
   Scenario "1" *-- "1..*" IAction : то
 }
 
-package "Вызовы контекстов типов приборов (HTTPS)" {
+package "Вызовы контекстов категорий приборов (HTTPS)" {
   interface IHeatingApi {
     +SetModeAsync(zoneId: Guid, mode: string): Task
   }
