@@ -22,7 +22,7 @@ System_Boundary(Warmhouse, "Умный дом") {
     ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
     ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний")
     ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, типы приборов")
-    ContainerDb(dbAuto, "БД модуля автоматизации", "PostgreSQL", "Сценарии, конфигурации сценариев")
+    ContainerDb(dbAuto, "БД модуля автоматизации", "PostgreSQL", "Сценарии, конфигурации сценариев, текущее состояние приборов и охраны")
     ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
 }
 
