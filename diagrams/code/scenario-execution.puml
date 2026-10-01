@@ -261,6 +261,7 @@ ScenarioExecutor --> IHouseStateStore : обновляет и читает со�
 ScenarioExecutor --> IScenarioEventPublisher
 ScenarioExecutor ..> TriggerContext : создаёт
 ScenarioExecutor ..> Scenario : проверяет и запускает
+IScenarioRepository ..> Scenario : возвращает
 ITrigger ..> TriggerContext
 ICondition ..> HouseState
 HeatingAction --> IHeatingApi
