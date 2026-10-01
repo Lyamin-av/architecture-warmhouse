@@ -92,6 +92,7 @@ components:
       schema:
         type: string
         format: uuid
+        example: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
     CorrelationId:
       name: X-Correlation-Id
       in: header
@@ -103,6 +104,7 @@ components:
       schema:
         type: string
         format: uuid
+        example: 0f1e2d3c-4b5a-4968-8776-655443322110
   headers:
     CorrelationId:
       description: Сквозной идентификатор цепочки (полученный или созданный)

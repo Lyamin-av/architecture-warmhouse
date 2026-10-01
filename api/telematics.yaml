@@ -90,6 +90,7 @@ components:
       schema:
         type: string
         format: uuid
+        example: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
     CorrelationId:
       name: X-Correlation-Id
       in: header
@@ -101,6 +102,7 @@ components:
       schema:
         type: string
         format: uuid
+        example: 0f1e2d3c-4b5a-4968-8776-655443322110
   schemas:
     Initiator:
       type: string

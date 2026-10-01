@@ -42,6 +42,7 @@ paths:
           schema:
             type: string
             format: uuid
+            example: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
         - name: category
           in: query
           required: false
@@ -62,6 +63,7 @@ paths:
           schema:
             type: string
             format: uuid
+            example: 0f1e2d3c-4b5a-4968-8776-655443322110
       responses:
         '200':
           description: Список приборов зоны (может быть пустым)
