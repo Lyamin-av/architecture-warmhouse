@@ -9,6 +9,15 @@ skinparam ranksep 60
 hide circle
 hide empty members
 
+legend top left
+  <b>Обозначения</b>
+  ━━━━  FK внутри одной БД (жирная сплошная)
+  ┄┄┄┄  логическая ссылка между БД разных сервисов, без FK (серый пунктир)
+  ||  ровно один     o|  ноль или один     }|  один или много     }o  ноль или много
+  <<ext: Сервис>> — атрибут-ссылка на сущность в БД другого сервиса
+  * — обязательный атрибут
+endlegend
+
 package "БД Аутентификации" {
   entity "credentials\nУчётные данные" as credentials {
     * user_id : uuid <<PK>> <<ext: Пользователи>>
@@ -357,67 +366,67 @@ package "БД Уведомлений" {
 }
 
 ' ---------- Связи внутри БД (FK) ----------
-credentials ||--o{ refresh_tokens
-credentials ||--o{ reset_tokens
-credentials |o--o{ login_attempts
+credentials ||-[thickness=2]-o{ refresh_tokens
+credentials ||-[thickness=2]-o{ reset_tokens
+credentials |o-[thickness=2]-o{ login_attempts
 
-users ||--o{ memberships
-roles ||--o{ memberships
-roles ||--o{ role_permissions
-permissions ||--o{ role_permissions
-memberships ||--o{ zone_visibility
+users ||-[thickness=2]-o{ memberships
+roles ||-[thickness=2]-o{ memberships
+roles ||-[thickness=2]-o{ role_permissions
+permissions ||-[thickness=2]-o{ role_permissions
+memberships ||-[thickness=2]-o{ zone_visibility
 
-houses ||--|{ plans
-plans ||--o{ zones
-houses ||--o{ placed_devices
-plans |o--o{ placed_devices
-zones |o--o{ placed_devices
+houses ||-[thickness=2]-|{ plans
+plans ||-[thickness=2]-o{ zones
+houses ||-[thickness=2]-o{ placed_devices
+plans |o-[thickness=2]-o{ placed_devices
+zones |o-[thickness=2]-o{ placed_devices
 
-devices |o--o{ devices : хаб
-devices ||--|| device_settings
-devices ||--o{ readings
+devices |o-[thickness=2]-o{ devices : хаб
+devices ||-[thickness=2]-|| device_settings
+devices ||-[thickness=2]-o{ readings
 
-adapters ||--o{ device_types
-device_types ||--o{ type_quantities
-device_types ||--o{ type_commands
+adapters ||-[thickness=2]-o{ device_types
+device_types ||-[thickness=2]-o{ type_quantities
+device_types ||-[thickness=2]-o{ type_commands
 
-security_states ||--o{ alarms
+security_states ||-[thickness=2]-o{ alarms
 
-templates ||--o{ scenarios
-scenarios ||--|{ triggers
-scenarios ||--o{ conditions
-conditions |o--o{ conditions : группа
-scenarios ||--|{ actions
+templates ||-[thickness=2]-o{ scenarios
+scenarios ||-[thickness=2]-|{ triggers
+scenarios ||-[thickness=2]-o{ conditions
+conditions |o-[thickness=2]-o{ conditions : группа
+scenarios ||-[thickness=2]-|{ actions
 
-notif_templates ||--o{ sent_notifications
+notif_templates ||-[thickness=2]-o{ sent_notifications
 
-' ---------- Логические ссылки между БД (без FK) ----------
-users ||..|| credentials
-users ||..o{ houses : владелец
-houses |o..o{ roles
-houses ||..o{ memberships
-zones ||..o{ zone_visibility
+' --------[thickness=2]-- Логические ссылки между БД (без FK) ----------
+users ||.[#888888].|| credentials
+users ||.[#888888].o{ houses : владелец
+houses |o.[#888888].o{ roles
+houses ||.[#888888].o{ memberships
+zones ||.[#888888].o{ zone_visibility
 
-devices ||..|| placed_devices
-houses ||..o{ devices
-device_types ||..o{ devices
-type_quantities ||..o{ readings
+devices ||.[#888888].|| placed_devices
+houses ||.[#888888].o{ devices
+device_types ||.[#888888].o{ devices
+type_quantities ||.[#888888].o{ readings
 
-zones ||..o| regimes
+zones ||.[#888888].o| regimes
 
-houses ||..o{ security_states
-zones |o..o{ security_states
-devices |o..o{ alarms
-houses ||..o{ allowed_plates
+houses ||.[#888888].o{ security_states
+zones |o.[#888888].o{ security_states
+devices |o.[#888888].o{ alarms
+houses ||.[#888888].o{ allowed_plates
 
-houses |o..o{ templates
-houses ||..o{ scenarios
-devices |o..o{ triggers
-devices |o..o{ conditions
-devices |o..o{ actions
-devices ||..o| device_projection
-security_states ||..o| security_projection
+houses |o.[#888888].o{ templates
+houses ||.[#888888].o{ scenarios
+devices |o.[#888888].o{ triggers
+devices |o.[#888888].o{ conditions
+devices |o.[#888888].o{ actions
+devices ||.[#888888].o| device_projection
+security_states ||.[#888888].o| security_projection
 
-users ||..o{ notif_settings
-users ||..o{ sent_notifications
+users ||.[#888888].o{ notif_settings
+users ||.[#888888].o{ sent_notifications
 @enduml
