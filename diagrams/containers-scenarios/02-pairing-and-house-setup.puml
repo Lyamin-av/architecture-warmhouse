@@ -15,7 +15,7 @@ System_Boundary(Warmhouse, "Умный дом") {
     Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
     ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
     ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний")
-    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, типы приборов")
+    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, категории и типы приборов")
     ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы")
 }
 
@@ -37,9 +37,11 @@ Rel(Broker, HouseConfigurator, "Доставляет: новые, удалённ
 Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
 Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
-Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
+Rel(HouseConfigurator, Broker, "Публикует: дом создан, зона удалена, зона восстановлена", "AMQP")
 
 note right of Broker
+  Подписчик на событие «дом создан»:
+  «Пользователи» (диаграмма 1).
   Подписчики на события зон:
   «Пользователи» (диаграмма 1),
   «Видеонаблюдение» (диаграмма 4),

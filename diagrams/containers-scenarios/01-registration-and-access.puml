@@ -33,8 +33,8 @@ Rel(Authentication, notify, "Письмо для сброса пароля", "HT
 Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
 Rel(Users, HouseConfigurator, "Дом и зоны плана для ролей", "HTTPS")
 Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
-Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
-Rel(Broker, Users, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+Rel(HouseConfigurator, Broker, "Публикует: дом создан, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Users, "Доставляет: дом создан, зона удалена, зона восстановлена", "AMQP")
 
 SHOW_LEGEND()
 @enduml
