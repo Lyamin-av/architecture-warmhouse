@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info:
+  title: Конфигурация дома (House Configuration Service)
+  version: 1.0.0
+  description: |
+    API микросервиса «Конфигурация дома» — хозяина понятий «дом», «план», «зона»
+    и расстановки приборов на плане.
+
+    В этой спецификации описан один эндпоинт — выдача приборов, расставленных в зоне.
+    Вызывающий: «Отопление» (какими приборами зоны добиваться цели).
+servers:
+  - url: http://house-configuration-service
+    description: Внутренний адрес сервиса
+security:
+  - bearerAuth: []
+tags:
+  - name: Зоны
+paths:
+  /zones/{zoneId}/devices:
+    get:
+      tags: [Зоны]
+      operationId: getZoneDevices
+      summary: Приборы, расставленные в зоне
+      description: |
+        Возвращает приборы, распределённые в зону на плане.
+        Удалённые приборы (мягкое удаление) не возвращаются.
+        Удалённая зона считается не найденной.
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          description: Идентификатор зоны
+          schema:
+            type: string
+            format: uuid
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          description: Сквозной идентификатор цепочки вызовов (для журналов)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список приборов зоны (может быть пустым)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [zoneId, devices]
+                properties:
+                  zoneId:
+                    type: string
+                    format: uuid
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlacedDevice'
+              example:
+                zoneId: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
+                devices:
+                  - deviceId: 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d
+                    houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+                    planId: 1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f
+                    zoneId: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
+                    x: 12.5
+                    y: 4.0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Зона не найдена или удалена
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PlacedDevice:
+      type: object
+      description: Прибор на плане (ссылка на прибор «Телематики» по идентификатору)
+      required: [deviceId, houseId, planId, zoneId]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Идентификатор прибора, выданный при сопряжении
+        houseId:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        x:
+          type: number
+          format: decimal
+          description: Координата на плане
+        y:
+          type: number
+          format: decimal
+          description: Координата на плане
+    Problem:
+      type: object
+      description: Описание ошибки (RFC 7807)
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+  responses:
+    Unauthorized:
+      description: Нет или недействителен токен
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
