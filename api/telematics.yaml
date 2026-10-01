@@ -73,6 +73,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     bearerAuth:
@@ -155,6 +157,13 @@ components:
           type: integer
         detail:
           type: string
+        instance:
+          type: string
+          description: Путь запроса, на котором возникла ошибка
+        correlationId:
+          type: string
+          format: uuid
+          description: X-Correlation-Id запроса — для поиска в журналах
   responses:
     BadRequest:
       description: Некорректный запрос
@@ -174,3 +183,25 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://warmhouse.example/problems/not-found
+            title: Прибор не найден
+            status: 404
+            detail: Прибор 9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d не сопряжён
+            instance: /devices/9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d/commands
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+    InternalServerError:
+      description: |
+        Внутренняя ошибка сервиса (например, недоступна его БД или зависимый
+        сервис). Запрос можно повторить позже.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://warmhouse.example/problems/internal-error
+            title: Внутренняя ошибка сервиса
+            status: 500
+            detail: Не удалось выполнить запрос, повторите позже
+            instance: /devices/9a8b7c6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d/commands
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110

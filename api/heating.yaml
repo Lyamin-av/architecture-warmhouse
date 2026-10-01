@@ -75,6 +75,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     bearerAuth:
@@ -164,6 +166,13 @@ components:
           type: integer
         detail:
           type: string
+        instance:
+          type: string
+          description: Путь запроса, на котором возникла ошибка
+        correlationId:
+          type: string
+          format: uuid
+          description: X-Correlation-Id запроса — для поиска в журналах
   responses:
     BadRequest:
       description: Некорректный запрос (например, температура вне диапазона)
@@ -189,3 +198,25 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://warmhouse.example/problems/not-found
+            title: Зона не найдена
+            status: 404
+            detail: Зона 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d не найдена в «Конфигурации дома»
+            instance: /zones/2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d/temperature-mode
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+    InternalServerError:
+      description: |
+        Внутренняя ошибка сервиса (например, недоступна его БД или зависимый
+        сервис). Запрос можно повторить позже.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://warmhouse.example/problems/internal-error
+            title: Внутренняя ошибка сервиса
+            status: 500
+            detail: Не удалось выполнить запрос, повторите позже
+            instance: /zones/2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d/temperature-mode
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
