@@ -117,26 +117,26 @@ package "Модель сценария" {
   }
 
   interface ITrigger {
-    +Fires(ctx: TriggerContext): bool
+    +IsFiredBy(ctx: TriggerContext): bool
   }
   class DeviceReadingTrigger {
     +DeviceId: Guid
-    +Fires(ctx: TriggerContext): bool
+    +IsFiredBy(ctx: TriggerContext): bool
   }
   class DeviceStateTrigger {
     +DeviceId: Guid
-    +Fires(ctx: TriggerContext): bool
+    +IsFiredBy(ctx: TriggerContext): bool
   }
   class SecurityEventTrigger {
     +Type: SecurityEventType
-    +Fires(ctx: TriggerContext): bool
+    +IsFiredBy(ctx: TriggerContext): bool
   }
   class ScheduleTrigger {
     +Cron: string
-    +Fires(ctx: TriggerContext): bool
+    +IsFiredBy(ctx: TriggerContext): bool
   }
   class ManualTrigger {
-    +Fires(ctx: TriggerContext): bool
+    +IsFiredBy(ctx: TriggerContext): bool
   }
 
   interface ICondition {
