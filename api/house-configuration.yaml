@@ -25,6 +25,14 @@ paths:
         Возвращает приборы, распределённые в зону на плане.
         Удалённые приборы (мягкое удаление) не возвращаются.
         Удалённая зона считается не найденной.
+
+        Категория и вид прибора — копия для чтения: сервис получает их в событии
+        «новый прибор» от «Телематики» (event-carried state transfer) и сохраняет
+        в «Приборе на плане». После сопряжения они не меняются.
+
+        Пример: «Отопление» запрашивает исполнительные устройства отопления зоны
+        (`category=heating&kind=actuator`), чтобы отдать им команды, и датчики зоны
+        (`kind=sensor`), чтобы знать, чьи показания учитывать.
       parameters:
         - name: zoneId
           in: path
@@ -33,6 +41,19 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: category
+          in: query
+          required: false
+          description: Фильтр по коду категории приборов (справочник «Интеграции приборов»)
+          schema:
+            type: string
+            example: heating
+        - name: kind
+          in: query
+          required: false
+          description: Фильтр по виду прибора
+          schema:
+            $ref: '#/components/schemas/DeviceKind'
         - name: X-Correlation-Id
           in: header
           required: false
@@ -63,6 +84,8 @@ paths:
                     houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
                     planId: 1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f
                     zoneId: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
+                    category: heating
+                    kind: actuator
                     x: 12.5
                     y: 4.0
         '401':
@@ -80,10 +103,14 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    DeviceKind:
+      type: string
+      enum: [sensor, actuator, hub]
+      description: Вид прибора — датчик, исполнительное устройство, модуль управления (хаб)
     PlacedDevice:
       type: object
       description: Прибор на плане (ссылка на прибор «Телематики» по идентификатору)
-      required: [deviceId, houseId, planId, zoneId]
+      required: [deviceId, houseId, planId, zoneId, category, kind]
       properties:
         deviceId:
           type: string
@@ -98,6 +125,11 @@ components:
         zoneId:
           type: string
           format: uuid
+        category:
+          type: string
+          description: Код категории приборов (отопление, свет, ворота, камеры…)
+        kind:
+          $ref: '#/components/schemas/DeviceKind'
         x:
           type: number
           format: decimal
