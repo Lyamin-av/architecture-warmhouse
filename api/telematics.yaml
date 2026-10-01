@@ -39,9 +39,9 @@ paths:
               $ref: '#/components/schemas/CommandRequest'
             example:
               initiator: heating
-              commandCode: set_power
+              commandCode: set_target_temperature
               parameters:
-                on: true
+                value: 22.0
       responses:
         '202':
           description: Команда принята; результат придёт событием «результат команды»

@@ -89,6 +89,14 @@ paths:
                     kind: actuator
                     x: 12.5
                     y: 4.0
+                  - deviceId: 5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e9f
+                    houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+                    planId: 1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f
+                    zoneId: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
+                    category: heating
+                    kind: sensor
+                    x: 8.0
+                    y: 2.5
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
