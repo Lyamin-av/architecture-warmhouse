@@ -1,0 +1,100 @@
+asyncapi: 2.6.0
+info:
+  title: Отопление — события (Heating Service Events)
+  version: 1.0.0
+  description: |
+    События, которые публикует микросервис «Отопление» в брокер RabbitMQ.
+
+    Итог применения температурного режима зоны (PUT /zones/{zoneId}/temperature-mode):
+    «Отопление» собирает результаты своих команд приборам зоны и публикует,
+    применён режим или нет. Событие несёт `correlationId` исходного вызова —
+    по нему «Автоматизация» сопоставляет итог с выполнением сценария.
+defaultContentType: application/json
+servers:
+  rabbitmq:
+    url: amqp://rabbitmq:5672
+    protocol: amqp
+    description: Брокер сообщений системы
+channels:
+  temperature-mode.result:
+    description: Режим зоны применён или не применён
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: heating.events
+          type: topic
+          durable: true
+    subscribe:
+      operationId: onTemperatureModeResult
+      summary: Подписчик — Автоматизация
+      message:
+        $ref: '#/components/messages/TemperatureModeResult'
+components:
+  messages:
+    TemperatureModeResult:
+      name: TemperatureModeResult
+      title: Режим применён / не применён
+      correlationId:
+        description: Сквозной идентификатор цепочки вызовов и событий
+        location: $message.payload#/correlationId
+      payload:
+        $ref: '#/components/schemas/TemperatureModeResult'
+      examples:
+        - payload:
+            eventId: 4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f8a
+            occurredAt: '2026-10-01T18:30:08Z'
+            correlationId: 0f1e2d3c-4b5a-4968-8776-655443322110
+            zoneId: 2b1d6c3e-0a4f-4e8b-9c7d-5f6e7a8b9c0d
+            houseId: 7f3c2a10-1b2c-4d5e-8f90-1a2b3c4d5e6f
+            targetTemperature: 22.0
+            mode: comfort
+            result: applied
+  schemas:
+    TemperatureModeResult:
+      type: object
+      required: [eventId, occurredAt, correlationId, zoneId, houseId, targetTemperature, mode, result]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Идентификатор события (для идемпотентной обработки)
+        occurredAt:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+          description: X-Correlation-Id вызова PUT /zones/{zoneId}/temperature-mode
+        zoneId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        targetTemperature:
+          type: number
+        mode:
+          type: string
+          enum: [comfort, eco, off]
+        result:
+          type: string
+          enum: [applied, not_applied]
+          description: Все команды приборам зоны выполнены — applied; хотя бы одна с ошибкой или таймаутом — not_applied
+        failedDevices:
+          type: array
+          description: Приборы, команды которым не выполнены (для not_applied)
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                format: uuid
+              commandId:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [failed, timeout]
+              error:
+                type: string

@@ -1,0 +1,164 @@
+@startuml c4-containers
+!include <C4/C4_Container>
+
+title Диаграмма контейнеров: Умный дом (To-Be)
+
+Person(homeowner, "Владелец дома", "Подключает приборы, настраивает план дома, сценарии, охрану и доступ для других пользователей")
+Person(member, "Пользователь с ограниченными правами", "Член семьи или гость: видит и управляет только разрешёнными зонами")
+Person(partner, "Партнёр-производитель", "Добавляет описания моделей своих приборов в каталог")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(webapp, "Веб-приложение", "React", "Личный кабинет клиента и админ-панель")
+    Container(mobile, "Мобильное приложение", "Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+
+    Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
+
+    Container(Lighting, "Управление освещением", ".NET", "Микросервис")
+    Container(GateControl, "Управление воротами", ".NET", "Микросервис")
+    Container(VideoControl, "Управление видеонаблюдением", ".NET", "Микросервис: права на просмотр камер, управление трансляциями, команды камерам")
+    Container(MediaServer, "Медиасервер", "HLS / WebRTC", "Забирает видеопоток с камер, отдаёт его пользователям (через Gateway) и в модуль охраны на анализ")
+
+    Container(Security, "Модуль охраны", ".NET", "Микросервис: управление охраной и видеоаналитика")
+    ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
+
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний, журнал команд")
+
+    Container(DeviceIntegration, "Модуль интеграции приборов", ".NET", "Микросервис: адаптеры протоколов и каталог моделей приборов")
+    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, категории и модели приборов")
+
+    Container(Automation, "Модуль автоматизации", ".NET", "Микросервис: конструктор и выполнение сценариев")
+    ContainerDb(dbAuto, "БД модуля автоматизации", "PostgreSQL", "Сценарии, конфигурации сценариев, текущее состояние приборов и охраны")
+
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы (с категорией и видом)")
+
+    Container(Notification, "Модуль уведомлений", ".NET", "Микросервис: рассылка уведомлений")
+    ContainerDb(dbNot, "БД модуля уведомлений", "PostgreSQL", "Шаблоны уведомлений, отправленные уведомления, настройки уведомлений пользователей")
+
+    Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
+    ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
+
+    Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
+    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логины и почты (копия из профиля), токены обновления и сброса пароля, логирование")
+}
+
+System_Ext(devices, "Приборы партнёров", "Датчики и исполнительные устройства: отопление, свет, ворота и др.")
+System_Ext(cameras, "Камеры", "Камеры видеонаблюдения партнёров")
+System_Ext(notify, "Сервис уведомлений", "Доставка push, SMS и email")
+
+' --- Люди и приложения ---
+Rel(homeowner, webapp, "Использует")
+Rel(homeowner, mobile, "Использует")
+Rel(member, webapp, "Использует")
+Rel(member, mobile, "Использует")
+Rel(partner, webapp, "Описывает модели приборов")
+
+' --- Приложения -> Gateway -> сервисы ---
+Rel(webapp, Gateway, "Все запросы", "HTTPS")
+Rel(mobile, Gateway, "Все запросы", "HTTPS")
+
+Rel(Gateway, Authentication, "Вход, обновление токена, сброс пароля", "HTTPS")
+Rel(Gateway, Authentication, "Публичный ключ для проверки токена", "HTTPS")
+Rel(Gateway, Users, "Регистрация, роли", "HTTPS")
+Rel(Gateway, HouseConfigurator, "План дома, расстановка приборов", "HTTPS")
+Rel(Gateway, Heating, "Температурные режимы", "HTTPS")
+Rel(Gateway, Lighting, "Управление светом", "HTTPS")
+Rel(Gateway, GateControl, "Управление воротами", "HTTPS")
+Rel(Gateway, VideoControl, "Список камер, права на просмотр", "HTTPS")
+Rel(Gateway, MediaServer, "Просмотр видеопотока", "Поток")
+Rel(Gateway, Security, "Управление охраной", "HTTPS")
+Rel(Gateway, Automation, "Конструктор сценариев", "HTTPS")
+Rel(Gateway, Telematics, "Сопряжение, настройка, показания", "HTTPS")
+Rel(Gateway, DeviceIntegration, "Каталог моделей приборов", "HTTPS")
+Rel(Gateway, Notification, "Настройки уведомлений", "HTTPS")
+
+' --- Пользователи и аутентификация ---
+Rel(Users, Authentication, "Создаёт учётные данные при регистрации", "HTTPS")
+Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
+
+' --- Команды к приборам (только через контексты своей категории и телематику) ---
+Rel(Heating, Telematics, "Команды", "HTTPS")
+Rel(Lighting, Telematics, "Команды", "HTTPS")
+Rel(GateControl, Telematics, "Команды", "HTTPS")
+Rel(VideoControl, Telematics, "Команды камерам", "HTTPS")
+Rel(Telematics, DeviceIntegration, "Команды и опрос через адаптеры", "HTTPS")
+Rel(DeviceIntegration, devices, "Команды, показания", "Протоколы партнёров")
+Rel(MediaServer, cameras, "Забирает видеопоток", "Протоколы партнёров")
+
+' --- Охрана и видео ---
+Rel(MediaServer, Security, "Видеопоток на анализ", "Поток")
+Rel(VideoControl, MediaServer, "Управление трансляциями камер", "HTTPS")
+Rel(Security, VideoControl, "Команды камерам (слежение), запуск и остановка потока на анализ", "HTTPS")
+Rel(Security, GateControl, "Открытие ворот для разрешённого номера", "HTTPS")
+
+' --- Данные о доме и правах ---
+Rel(Heating, HouseConfigurator, "Зоны плана, приборы зоны по категории и виду", "HTTPS")
+Rel(Security, HouseConfigurator, "Дом, зоны, периметр", "HTTPS")
+Rel(VideoControl, HouseConfigurator, "Зона камеры", "HTTPS")
+Rel(VideoControl, Users, "Зоны, видимые пользователю", "HTTPS")
+Rel(Users, HouseConfigurator, "Дом и зоны плана для ролей", "HTTPS")
+Rel(MediaServer, VideoControl, "Проверка прав на просмотр камеры", "HTTPS")
+
+' --- Автоматизация ---
+Rel(Automation, HouseConfigurator, "Приборы и зоны для сценариев", "HTTPS")
+Rel(Automation, DeviceIntegration, "Возможности приборов из каталога", "HTTPS")
+Rel(Automation, Heating, "Команды по сценарию", "HTTPS")
+Rel(Automation, Lighting, "Команды по сценарию", "HTTPS")
+Rel(Automation, GateControl, "Команды по сценарию", "HTTPS")
+Rel(Automation, VideoControl, "Команды по сценарию", "HTTPS")
+Rel(Automation, Security, "Постановка на охрану по сценарию", "HTTPS")
+
+' --- События через брокер ---
+Rel(Telematics, Broker, "Публикует: показания, состояние приборов, новые (с моделью, категорией и видом), удалённые и восстановленные приборы, результат команды", "AMQP")
+Rel(DeviceIntegration, Broker, "Публикует: результат команды от адаптера", "AMQP")
+Rel(Broker, Telematics, "Доставляет: результат команды от адаптера", "AMQP")
+Rel(Heating, Broker, "Публикует: режим применён / не применён", "AMQP")
+Rel(Lighting, Broker, "Публикует: команда освещения выполнена / ошибка", "AMQP")
+Rel(GateControl, Broker, "Публикует: команда воротам выполнена / ошибка", "AMQP")
+Rel(VideoControl, Broker, "Публикует: команда камере выполнена / ошибка", "AMQP")
+Rel(Security, Broker, "Публикует: тревога, постановка, постановка не выполнена, снятие", "AMQP")
+Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
+Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны, итоги действий (отопление, свет, ворота, камеры), удаление и восстановление зон", "AMQP")
+Rel(Broker, HouseConfigurator, "Доставляет: новые (с категорией и видом), удалённые и восстановленные приборы", "AMQP")
+Rel(Broker, Notification, "Доставляет: состояние приборов, результат команды, события охраны и сценариев", "AMQP")
+Rel(Broker, Lighting, "Доставляет: результат команды", "AMQP")
+Rel(Broker, GateControl, "Доставляет: результат команды", "AMQP")
+
+Rel(HouseConfigurator, Broker, "Публикует: дом создан, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Users, "Доставляет: дом создан, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Security, "Доставляет: показания и состояние приборов, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Heating, "Доставляет: показания приборов, результат команды, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, VideoControl, "Доставляет: результат команды, зона удалена, зона восстановлена", "AMQP")
+
+' --- Уведомления ---
+Rel(Notification, Users, "Получатели по дому и ролям, контакты", "HTTPS")
+Rel(Notification, notify, "Доставка push, SMS, email", "HTTPS")
+
+' --- Базы данных ---
+Rel(Heating, dbHeating, "Читает и пишет", "SQL")
+Rel(Security, dbSecurity, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
+Rel(Automation, dbAuto, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+Rel(Notification, dbNot, "Читает и пишет", "SQL")
+Rel(Users, dbUsers, "Читает и пишет", "SQL")
+Rel(Authentication, notify, "Письмо для сброса пароля", "HTTPS")
+Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
+
+' Компромисс между вариантами A и C: медиасервер выделен в отдельный контейнер,
+' но видеопоток к пользователю сознательно идёт через API Gateway (упрощение).
+note right of MediaServer
+  **Сознательное упрощение.**
+  Медиасервер выделен отдельно, но видеопоток
+  к пользователю идёт через API Gateway.
+  При росте нагрузки поток можно отдавать
+  клиентам напрямую, минуя Gateway.
+end note
+
+SHOW_LEGEND()
+@enduml

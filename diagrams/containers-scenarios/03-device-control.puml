@@ -1,0 +1,58 @@
+@startuml 03-device-control
+!include <C4/C4_Container>
+
+title Сценарий 3 из 7. Управление отоплением, светом и воротами
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
+    Container(Lighting, "Управление освещением", ".NET", "Микросервис")
+    Container(GateControl, "Управление воротами", ".NET", "Микросервис")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    Container(DeviceIntegration, "Модуль интеграции приборов", ".NET", "Микросервис: адаптеры протоколов и каталог моделей приборов")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний, журнал команд")
+    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, категории и модели приборов")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы (с категорией и видом)")
+}
+
+System_Ext(devices, "Приборы партнёров", "Датчики и исполнительные устройства: отопление, свет, ворота и др.")
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Heating, "Температурные режимы", "HTTPS")
+Rel(Gateway, Lighting, "Управление светом", "HTTPS")
+Rel(Gateway, GateControl, "Управление воротами", "HTTPS")
+Rel(Heating, HouseConfigurator, "Зоны плана, приборы зоны по категории и виду", "HTTPS")
+Rel(Heating, Telematics, "Команды", "HTTPS")
+Rel(Telematics, Broker, "Публикует: показания приборов, результат команды", "AMQP")
+Rel(Broker, Heating, "Доставляет: показания приборов, результат команды", "AMQP")
+Rel(Broker, Lighting, "Доставляет: результат команды", "AMQP")
+Rel(Broker, GateControl, "Доставляет: результат команды", "AMQP")
+Rel(DeviceIntegration, Broker, "Публикует: результат команды от адаптера", "AMQP")
+Rel(Broker, Telematics, "Доставляет: результат команды от адаптера", "AMQP")
+
+note right of Broker
+  Команды асинхронные: сервис отвечает
+  «принято», результат приходит событием.
+  Все вызовы и события несут correlationId.
+  Подписчики «результата команды» вне сценария:
+  видеонаблюдение (диаграмма 5), уведомления (диаграмма 7).
+end note
+Rel(Lighting, Telematics, "Команды", "HTTPS")
+Rel(GateControl, Telematics, "Команды", "HTTPS")
+Rel(Telematics, DeviceIntegration, "Команды и опрос через адаптеры", "HTTPS")
+Rel(DeviceIntegration, devices, "Команды, показания", "Протоколы партнёров")
+
+Rel(Heating, dbHeating, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,40 @@
+@startuml 01-registration-and-access
+!include <C4/C4_Container>
+
+title Сценарий 1 из 7. Регистрация, вход и права доступа
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Authentication, "Модуль аутентификации", ".NET", "Микросервис: вход и проверка личности")
+    Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+    ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
+    ContainerDb(dbAuth, "БД модуля аутентификации", "PostgreSQL", "Учётные данные, логины и почты (копия из профиля), токены обновления и сброса пароля, логирование")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы (с категорией и видом)")
+}
+
+System_Ext(notify, "Сервис уведомлений", "Доставка push, SMS и email")
+
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Authentication, "Вход, обновление токена, сброс пароля", "HTTPS")
+Rel(Gateway, Authentication, "Публичный ключ для проверки токена", "HTTPS")
+Rel(Gateway, Users, "Регистрация, роли", "HTTPS")
+Rel(Users, Authentication, "Создаёт учётные данные при регистрации", "HTTPS")
+Rel(Users, Authentication, "Обновляет логин и почту при смене", "HTTPS")
+
+Rel(Users, dbUsers, "Читает и пишет", "SQL")
+Rel(Authentication, notify, "Письмо для сброса пароля", "HTTPS")
+Rel(Authentication, dbAuth, "Читает и пишет", "SQL")
+Rel(Users, HouseConfigurator, "Дом и зоны плана для ролей", "HTTPS")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, Broker, "Публикует: дом создан, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Users, "Доставляет: дом создан, зона удалена, зона восстановлена", "AMQP")
+
+SHOW_LEGEND()
+@enduml

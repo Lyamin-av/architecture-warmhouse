@@ -1,0 +1,68 @@
+@startuml 06-automation
+!include <C4/C4_Container>
+
+title Сценарий 6 из 7. Сценарии автоматизации
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Automation, "Модуль автоматизации", ".NET", "Микросервис: конструктор и выполнение сценариев")
+    Container(HouseConfigurator, "Модуль конфигурации дома", ".NET", "Микросервис: дом, зоны, периметр, расстановка приборов")
+    Container(DeviceIntegration, "Модуль интеграции приборов", ".NET", "Микросервис: адаптеры протоколов и каталог моделей приборов")
+    Container(Heating, "Управление отоплением", ".NET", "Микросервис: температурные режимы зон")
+    Container(Lighting, "Управление освещением", ".NET", "Микросервис")
+    Container(GateControl, "Управление воротами", ".NET", "Микросервис")
+    Container(VideoControl, "Управление видеонаблюдением", ".NET", "Микросервис: права на просмотр камер, управление трансляциями, команды камерам")
+    Container(Security, "Модуль охраны", ".NET", "Микросервис: управление охраной и видеоаналитика")
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+    ContainerDb(dbHeating, "БД управления отоплением", "PostgreSQL", "Температурные режимы")
+    ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний, журнал команд")
+    ContainerDb(dbDIS, "БД модуля интеграции приборов", "PostgreSQL", "Адаптеры, категории и модели приборов")
+    ContainerDb(dbAuto, "БД модуля автоматизации", "PostgreSQL", "Сценарии, конфигурации сценариев, текущее состояние приборов и охраны")
+    ContainerDb(dbHC, "БД модуля конфигурации дома", "PostgreSQL", "План дома, зоны, приборы (с категорией и видом)")
+}
+
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Automation, "Конструктор сценариев", "HTTPS")
+Rel(Automation, HouseConfigurator, "Приборы и зоны для сценариев", "HTTPS")
+Rel(Automation, DeviceIntegration, "Возможности приборов из каталога", "HTTPS")
+Rel(Automation, Heating, "Команды по сценарию", "HTTPS")
+Rel(Automation, Lighting, "Команды по сценарию", "HTTPS")
+Rel(Automation, GateControl, "Команды по сценарию", "HTTPS")
+Rel(Automation, VideoControl, "Команды по сценарию", "HTTPS")
+Rel(Automation, Security, "Постановка на охрану по сценарию", "HTTPS")
+Rel(Telematics, Broker, "Публикует: показания, состояние приборов", "AMQP")
+Rel(Security, Broker, "Публикует: тревога, постановка, постановка не выполнена, снятие", "AMQP")
+Rel(Heating, Broker, "Публикует: режим применён / не применён", "AMQP")
+Rel(Lighting, Broker, "Публикует: команда освещения выполнена / ошибка", "AMQP")
+Rel(GateControl, Broker, "Публикует: команда воротам выполнена / ошибка", "AMQP")
+Rel(VideoControl, Broker, "Публикует: команда камере выполнена / ошибка", "AMQP")
+Rel(Broker, Automation, "Доставляет: показания, состояние приборов, события охраны, итоги действий (отопление, свет, ворота, камеры), удаление и восстановление зон", "AMQP")
+Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
+
+note right of Broker
+  Подписчик на «сценарий сработал»:
+  модуль уведомлений (диаграмма 7).
+  Итог действия сопоставляется с выполнением
+  сценария по correlationId, который Автоматизация
+  передаёт в вызов сервиса.
+end note
+
+Rel(Heating, dbHeating, "Читает и пишет", "SQL")
+Rel(Security, dbSecurity, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(DeviceIntegration, dbDIS, "Читает и пишет", "SQL")
+Rel(Automation, dbAuto, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, dbHC, "Читает и пишет", "SQL")
+Rel(HouseConfigurator, Broker, "Публикует: зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Heating, "Доставляет: показания приборов, зона удалена, зона восстановлена", "AMQP")
+Rel(Broker, Security, "Доставляет: зона удалена, зона восстановлена", "AMQP")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,146 @@
+@startuml context-map
+title Карта контекстов (Context Map) — Умный дом
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontSize 12
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+skinparam package {
+  BorderColor #888888
+  FontStyle bold
+}
+
+' Условные обозначения:
+'   стрелка идёт от downstream (D) к upstream (U): D зависит от U
+'   [ACL] — anti-corruption layer
+
+package "Домен: Умный дом" as DOMAIN #FFFFFF {
+  package "Поддомен: Управление отоплением [supporting]" as SD_HEAT #FBEFE6 {
+    rectangle "Настройка\nтемпературного режима" as HEAT
+  }
+  package "Поддомен: Управление освещением [supporting]" as SD_LIGHT #FBEFE6 {
+    rectangle "Управление\nосвещением" as LIGHT
+  }
+  package "Поддомен: Управление воротами [supporting]" as SD_GATE #FBEFE6 {
+    rectangle "Управление\nворотами" as GATE
+  }
+  package "Поддомен: Управление видеонаблюдением [supporting]" as SD_VIDEO #FBEFE6 {
+    rectangle "Просмотр камер" as CAM_VIEW
+    rectangle "Передача видеопотока\nна анализ" as CAM_STREAM
+    rectangle "Управление камерами" as CAM_CTRL
+  }
+  package "Поддомен: Охрана [supporting]" as SD_SEC #FBEFE6 {
+    rectangle "Управление охраной" as SEC
+    rectangle "Видеоаналитика\n[generic]" as VA
+  }
+  package "Поддомен: Управление телематикой [supporting]" as SD_TEL #FBEFE6 {
+    rectangle "Управление приборами\n(хозяин прибора)" as DEV
+    rectangle "Телеметрия\n(сбор, архив, выдача\nпоказаний)" as COLLECT
+  }
+  package "Поддомен: Интеграция приборов [core]" as SD_INT #E6EEFB {
+    rectangle "Адаптеры протоколов\n[ACL]" as ADAPT
+    rectangle "Каталог моделей\nприборов" as CATALOG
+  }
+  package "Поддомен: Автоматизация [core]" as SD_AUTO #E6EEFB {
+    rectangle "Конструктор сценариев" as SCEN
+    rectangle "Выполнение сценариев" as RUN
+  }
+  package "Поддомен: Конструктор дома [supporting]" as SD_HOUSE #FBEFE6 {
+    rectangle "Зонирование и расстановка\nприборов (хозяин дома,\nзон, периметра)" as HOUSE
+  }
+  package "Поддомен: Пользователи [generic]" as SD_USERS #EEEEEE {
+    rectangle "Регистрация\nпользователей" as REG
+    rectangle "Настройка\nролевой модели" as ROLES
+  }
+  package "Поддомен: Уведомления [generic]" as SD_NOTIFY #EEEEEE {
+    rectangle "Рассылка уведомлений" as NOTIFY
+  }
+  package "Поддомен: Аутентификация [generic]" as SD_AUTH #EEEEEE {
+    rectangle "Режимы\nаутентификации" as AUTH
+  }
+}
+
+rectangle "Приборы партнёров\n(внешние)" as EXT_DEV #F5F5F5
+rectangle "Камеры\n(внешние)" as EXT_CAM #F5F5F5
+rectangle "Сервис уведомлений\n(внешний: push, SMS, email)" as EXT_NOTIFY #F5F5F5
+
+' --- команды к приборам ---
+HEAT "D" --> "U" DEV : команды
+LIGHT "D" --> "U" DEV : команды
+GATE "D" --> "U" DEV : команды
+CAM_CTRL "D" --> "U" DEV : команды
+DEV "D" --> "U" ADAPT : команды
+DEV "D" --> "U" CATALOG : описание модели
+ADAPT --> EXT_DEV : протоколы партнёров
+
+' --- данные с приборов ---
+COLLECT "D" --> "U" ADAPT : показания
+COLLECT "D" --> "U" DEV : прибор, частота опроса
+HEAT "D" --> "U" COLLECT : текущая температура
+
+' --- сценарии и охрана ---
+RUN "D" --> "U" SCEN : активные сценарии
+RUN "D" --> "U" HEAT : команды
+RUN "D" --> "U" LIGHT : команды
+RUN "D" --> "U" GATE : команды
+RUN "D" --> "U" SEC : постановка на охрану
+RUN "D" --> "U" SEC : события охраны\n[OHS/PL]
+RUN "D" --> "U" COLLECT : показания\n[OHS/PL]
+RUN "D" --> "U" DEV : состояние приборов\n[OHS/PL]
+SCEN "D" --> "U" HOUSE : приборы и зоны
+SCEN "D" --> "U" CATALOG : возможности приборов
+SEC "D" --> "U" GATE : открыть ворота
+SEC "D" --> "U" VA : распознанный номер
+VA "D" --> "U" CAM_STREAM : видеопоток
+VA "D" --> "U" CAM_CTRL : команда слежения
+
+' --- видео (исключение: напрямую с камер) ---
+CAM_STREAM --> EXT_CAM : видеопоток
+CAM_VIEW --> EXT_CAM : видеопоток
+
+' --- дом и приборы ---
+HOUSE "D" --> "U" DEV : новые / удалённые приборы
+HEAT "D" --> "U" HOUSE : зона
+SEC "D" --> "U" HOUSE : дом, зоны, периметр
+ROLES "D" --> "U" HOUSE : дом, зоны
+
+' --- пользователи, доступ ---
+REG "D" --> "U" AUTH : создание учётных данных\n[Conformist]
+ROLES "D" --> "U" REG : пользователь
+CAM_VIEW "D" --> "U" HOUSE : зона камеры
+CAM_VIEW "D" --> "U" ROLES : видимые зоны
+
+' --- уведомления ---
+NOTIFY "D" --> "U" SEC : тревоги\n[OHS/PL]
+NOTIFY "D" --> "U" DEV : прибор не отвечает\n[OHS/PL]
+NOTIFY "D" --> "U" RUN : действие «уведомить»
+NOTIFY "D" --> "U" ROLES : получатели
+NOTIFY --> EXT_NOTIFY : доставка
+
+note bottom of AUTH
+  Аутентификация — сквозная:
+  проверяется на входе в систему
+  (детали — задание 2).
+  Пользовательские контексты
+  проверяют права по
+  «Настройке ролевой модели».
+end note
+
+legend right
+  |= Обозначение |= Смысл |
+  | Внешняя рамка «Домен» | домен |
+  | Рамка «Поддомен: …» | поддомен; цвет = тип |
+  |<#E6EEFB>| core |
+  |<#FBEFE6>| supporting |
+  |<#EEEEEE>| generic |
+  | Белый блок внутри поддомена | ограниченный контекст |
+  | Серый блок вне домена | внешняя система |
+  | Стрелка D → U | downstream зависит от upstream |
+  | [ACL] | anti-corruption layer |
+  | [OHS/PL] | open host service / published language: события в едином формате |
+endlegend
+
+@enduml

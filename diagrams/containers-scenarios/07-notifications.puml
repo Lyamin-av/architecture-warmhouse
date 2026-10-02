@@ -1,0 +1,43 @@
+@startuml 07-notifications
+!include <C4/C4_Container>
+
+title Сценарий 7 из 7. Уведомления
+
+Person(user, "Пользователь", "Владелец дома или пользователь с ограниченными правами")
+
+System_Boundary(Warmhouse, "Умный дом") {
+    Container(apps, "Веб- и мобильное приложение", "React / Flutter", "Личный кабинет клиента и админ-панель")
+    Container(Gateway, "API Gateway", ".NET (YARP)", "Единая точка входа: маршрутизация запросов к сервисам, проверка токена")
+    Container(Notification, "Модуль уведомлений", ".NET", "Микросервис: рассылка уведомлений")
+    Container(Users, "Модуль регистрации пользователей", ".NET", "Микросервис: профили пользователей и ролевая модель")
+    ContainerQueue(Broker, "Брокер сообщений", "RabbitMQ", "Доставка событий подписчикам: очередь на каждого подписчика, повторные попытки, очередь недоставленных")
+    Container(Telematics, "Модуль телематики", ".NET", "Микросервис: управление приборами и телеметрия")
+    Container(Security, "Модуль охраны", ".NET", "Микросервис: управление охраной и видеоаналитика")
+    Container(Automation, "Модуль автоматизации", ".NET", "Микросервис: конструктор и выполнение сценариев")
+    ContainerDb(dbSecurity, "БД модуля охраны", "PostgreSQL", "Состояние и режим охраны, журнал тревог, разрешённые номера")
+    ContainerDb(dbTelematics, "БД модуля телематики", "PostgreSQL", "Приборы и их настройки, архив показаний, журнал команд")
+    ContainerDb(dbAuto, "БД модуля автоматизации", "PostgreSQL", "Сценарии, конфигурации сценариев, текущее состояние приборов и охраны")
+    ContainerDb(dbNot, "БД модуля уведомлений", "PostgreSQL", "Шаблоны уведомлений, отправленные уведомления, настройки уведомлений пользователей")
+    ContainerDb(dbUsers, "БД пользователей", "PostgreSQL", "Пользователи, информация о пользователях, ролевая модель")
+}
+
+System_Ext(notify, "Сервис уведомлений", "Доставка push, SMS и email")
+
+Rel(user, apps, "Использует")
+Rel(apps, Gateway, "Все запросы", "HTTPS")
+Rel(Gateway, Notification, "Настройки уведомлений", "HTTPS")
+Rel(Telematics, Broker, "Публикует: состояние приборов, результат команды", "AMQP")
+Rel(Security, Broker, "Публикует: тревога, постановка, постановка не выполнена, снятие", "AMQP")
+Rel(Automation, Broker, "Публикует: сценарий сработал", "AMQP")
+Rel(Broker, Notification, "Доставляет: состояние приборов, результат команды, события охраны и сценариев", "AMQP")
+Rel(Notification, Users, "Получатели по дому и ролям, контакты", "HTTPS")
+Rel(Notification, notify, "Доставка push, SMS, email", "HTTPS")
+
+Rel(Security, dbSecurity, "Читает и пишет", "SQL")
+Rel(Telematics, dbTelematics, "Читает и пишет", "SQL")
+Rel(Automation, dbAuto, "Читает и пишет", "SQL")
+Rel(Notification, dbNot, "Читает и пишет", "SQL")
+Rel(Users, dbUsers, "Читает и пишет", "SQL")
+
+SHOW_LEGEND()
+@enduml
