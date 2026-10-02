@@ -189,6 +189,414 @@
                 "description": "Update a sensor's value and status"
             },
             "response": []
+        },
+        {
+            "name": "temperature-api",
+            "description": "Проверка temperature-api (Задание 5): напрямую на порту 8081 и через монолит. В каждом запросе есть тесты (вкладка Test Results); тест «value отличается» срабатывает со второго вызова.",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('status = ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/health",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        },
+                        "description": "Проверка работоспособности temperature-api"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Location (Kitchen)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Kitchen', () => pm.expect(r.location).to.eql('Kitchen'));",
+                                    "pm.test('sensor_id = 3', () => pm.expect(r.sensor_id).to.eql('3'));",
+                                    "const prev = pm.collectionVariables.get('lastKitchen');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastKitchen', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature?location=Kitchen",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Kitchen"
+                                }
+                            ]
+                        },
+                        "description": "Основной эндпоинт задания: случайная температура по локации. Отправьте несколько раз — value меняется."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Location (Bedroom)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Bedroom', () => pm.expect(r.location).to.eql('Bedroom'));",
+                                    "pm.test('sensor_id = 2', () => pm.expect(r.sensor_id).to.eql('2'));",
+                                    "const prev = pm.collectionVariables.get('lastBedroom');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastBedroom', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature?location=Bedroom",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Bedroom"
+                                }
+                            ]
+                        },
+                        "description": "Комната → sensor_id по правилам условия: Bedroom → 2."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Location (Living Room)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Living Room', () => pm.expect(r.location).to.eql('Living Room'));",
+                                    "pm.test('sensor_id = 1', () => pm.expect(r.sensor_id).to.eql('1'));",
+                                    "const prev = pm.collectionVariables.get('lastLivingRoom');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastLivingRoom', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature?location=Living Room",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Living Room"
+                                }
+                            ]
+                        },
+                        "description": "Название с пробелом: Postman кодирует его сам. Living Room → 1."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Location (Unknown room)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Garage', () => pm.expect(r.location).to.eql('Garage'));",
+                                    "pm.test('sensor_id = 0', () => pm.expect(r.sensor_id).to.eql('0'));",
+                                    "const prev = pm.collectionVariables.get('lastGarage');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastGarage', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature?location=Garage",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature"
+                            ],
+                            "query": [
+                                {
+                                    "key": "location",
+                                    "value": "Garage"
+                                }
+                            ]
+                        },
+                        "description": "Неизвестная комната → sensor_id = 0."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Sensor ID (query)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Bedroom', () => pm.expect(r.location).to.eql('Bedroom'));",
+                                    "pm.test('sensor_id = 2', () => pm.expect(r.sensor_id).to.eql('2'));",
+                                    "const prev = pm.collectionVariables.get('lastQuerySid');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastQuerySid', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature?sensorId=2",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature"
+                            ],
+                            "query": [
+                                {
+                                    "key": "sensorId",
+                                    "value": "2"
+                                }
+                            ]
+                        },
+                        "description": "Пустая location дополняется по sensorId: 2 → Bedroom."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Sensor ID (path)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Living Room', () => pm.expect(r.location).to.eql('Living Room'));",
+                                    "pm.test('sensor_id = 1', () => pm.expect(r.sensor_id).to.eql('1'));",
+                                    "const prev = pm.collectionVariables.get('lastPathSid');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastPathSid', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature/1",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature",
+                                "1"
+                            ]
+                        },
+                        "description": "Путь, которым монолит читает показания в Get All Sensors / Get Sensor by ID. 1 → Living Room."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Temperature by Unknown Sensor ID (path)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Unknown', () => pm.expect(r.location).to.eql('Unknown'));",
+                                    "pm.test('sensor_id = 7', () => pm.expect(r.sensor_id).to.eql('7'));",
+                                    "const prev = pm.collectionVariables.get('lastPathUnknown');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastPathUnknown', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{temperatureApiUrl}}/temperature/7",
+                            "host": [
+                                "{{temperatureApiUrl}}"
+                            ],
+                            "path": [
+                                "temperature",
+                                "7"
+                            ]
+                        },
+                        "description": "Неизвестный ID → location = Unknown."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Monolith: Temperature by Location",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Статус 200', () => pm.response.to.have.status(200));",
+                                    "const r = pm.response.json();",
+                                    "pm.test('Есть все поля ответа', () => {",
+                                    "    ['value','unit','timestamp','location','status','sensor_id','sensor_type','description']",
+                                    "        .forEach(f => pm.expect(r).to.have.property(f));",
+                                    "});",
+                                    "pm.test('value — число', () => pm.expect(r.value).to.be.a('number'));",
+                                    "pm.test('location = Kitchen', () => pm.expect(r.location).to.eql('Kitchen'));",
+                                    "pm.test('sensor_id = 3', () => pm.expect(r.sensor_id).to.eql('3'));",
+                                    "const prev = pm.collectionVariables.get('lastMonolithKitchen');",
+                                    "if (prev !== undefined && prev !== '') {",
+                                    "    pm.test('value отличается от предыдущего вызова', () => pm.expect(r.value).to.not.eql(Number(prev)));",
+                                    "}",
+                                    "pm.collectionVariables.set('lastMonolithKitchen', r.value);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/sensors/temperature/Kitchen",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "sensors",
+                                "temperature",
+                                "Kitchen"
+                            ]
+                        },
+                        "description": "Эндпоинт монолита: он сам вызывает temperature-api по /temperature?location=. Используйте название без пробела — монолит не кодирует пробел в запросе к temperature-api."
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "event": [
@@ -215,6 +623,11 @@
         {
             "key": "baseUrl",
             "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "temperatureApiUrl",
+            "value": "http://localhost:8081",
             "type": "string"
         }
     ]
