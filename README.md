@@ -726,3 +726,16 @@ Locations - название комнаты, sensorId - идентификато
 Ревьюер будет проверять точно так же.
 
 
+
+### Решение
+
+- `apps/temperature-api/` — сервис на Python (FastAPI), порт 8081, на каждый запрос отдаёт случайную температуру (15–30 °C) в формате, который ожидает монолит:
+  - `GET /temperature?location=<комната>` (и `sensorId=` в query) — по локации; пустые location / sensorId дополняются по правилам из условия;
+  - `GET /temperature/{sensorId}` — по ID датчика: этим путём монолит читает показания в Get All Sensors и Get Sensor by ID;
+  - `GET /health`.
+- `apps/docker-compose.yml`:
+  - `temperature-api` — сборка из `./temperature-api`, порт `8081:8081`;
+  - `postgres` — `./smart_home/init.sql` монтируется в `/docker-entrypoint-initdb.d/`, данные в томе `postgres_data`, healthcheck `pg_isready` по TCP (готов только после выполнения `init.sql`). `POSTGRES_DB` не задан, потому что базу `smarthome` создаёт сам `init.sql`.
+
+Запуск: `cd apps && ./init.sh` (или `docker compose up --build -d`), затем в Postman — Create Sensor и Get All Sensors.
+Если база уже создавалась ранее с другими настройками, перед запуском удалить том: `docker compose down -v`.
